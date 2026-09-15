@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 const items = [
-  { key: 'overview', href: '/admin?tab=overview', mark: 'O' },
-  { key: 'users', href: '/admin?tab=users', mark: 'U' },
-  { key: 'tournaments', href: '/admin?tab=tournaments', mark: 'T' },
-  { key: 'teams', href: '/admin?tab=teams', mark: 'T' },
+  { key: 'overview', href: '/admin', mark: 'O' },
+  { key: 'users', href: '/admin/users', mark: 'U' },
+  { key: 'tournaments', href: '/admin/tournaments', mark: 'T' },
+  { key: 'teams', href: '/admin/teams', mark: 'T' },
   { key: 'sports', href: '/admin/sports', mark: 'S' },
   { key: 'matches', href: '/admin/matches', mark: 'M' },
 ] as const;
