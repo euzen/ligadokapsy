@@ -1,0 +1,64 @@
+import { createClient } from '@supabase/supabase-js';
+import * as Crypto from 'expo-crypto';
+import { getLocales } from 'expo-localization';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import 'react-native-url-polyfill/auto';
+
+import type { AdminMetrics, AppRole, EditableProfile, Match, MatchAccess, MatchEvent, PublicMatch, Sport, Team, Tournament, UserProfile } from '@/types/database';
+
+export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE === 'supabase';
+const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
+const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder';
+const nativeStorage = { getItem: (name: string) => SecureStore.getItemAsync(name), setItem: (name: string, value: string) => SecureStore.setItemAsync(name, value), removeItem: (name: string) => SecureStore.deleteItemAsync(name) };
+export const supabase = createClient(url, key, { auth: { ...(Platform.OS === 'web' ? {} : { storage: nativeStorage }), persistSession: true, autoRefreshToken: true, detectSessionInUrl: Platform.OS === 'web' } });
+
+function mapProfile(row: any): UserProfile { return { id: row.id, displayName: row.display_name, email: row.email, role: row.role, favoriteSport: row.favorite_sport, avatarUrl: row.avatar_url, profileColor: row.profile_color, createdAt: row.created_at, language: row.language }; }
+function mapSport(row: any): Sport { return { ...row, active: Boolean(row.active), periods_config: typeof row.periods_config === 'string' ? row.periods_config : JSON.stringify(row.periods_config) }; }
+function fail(error: { message: string } | null) { if (error) throw new Error(error.message); }
+async function currentUserId() { const { data } = await supabase.auth.getUser(); if (!data.user) throw new Error('auth.required'); return data.user.id; }
+
+async function uploadDataUri(value: string | null | undefined, bucket: 'avatars' | 'logos') {
+  if (!value?.startsWith('data:')) return value;
+  const userId = await currentUserId(); const mime = value.slice(5, value.indexOf(';')) || 'image/jpeg'; const extension = mime.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg'; const path = `${userId}/${Crypto.randomUUID()}.${extension}`; const bytes = await fetch(value).then((response) => response.arrayBuffer());
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType: mime, upsert: false }); fail(error); return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+export async function sbSignIn(email: string, password: string) { const { data, error } = await supabase.auth.signInWithPassword({ email, password }); fail(error); if (!data.user) throw new Error('auth.required'); const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', data.user.id).single(); fail(profileError); return mapProfile(profile); }
+export async function sbSignUp(displayName: string, email: string, password: string) { const languageCode = getLocales()[0]?.languageCode; const language = languageCode === 'cs' || languageCode === 'sk' ? 'cs' : 'en'; const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName, language } } }); fail(error); if (!data.session) throw new Error('auth.emailConfirmationRequired'); const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', data.user!.id).single(); fail(profileError); return mapProfile(profile); }
+export async function sbRestoreSession() { const { data } = await supabase.auth.getSession(); if (!data.session) return null; const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).maybeSingle(); return profile ? mapProfile(profile) : null; }
+export async function sbSignOut() { const { error } = await supabase.auth.signOut(); fail(error); }
+export async function sbListUsers() { const { data, error } = await supabase.from('profiles').select('*').order('created_at'); fail(error); return (data ?? []).map(mapProfile); }
+export async function sbUpdateUser(id: string, values: Partial<EditableProfile> & { role?: AppRole }) { const { data: auth } = await supabase.auth.getUser(); if (auth.user?.id === id && values.email && values.email !== auth.user.email) { const { error } = await supabase.auth.updateUser({ email: values.email }); fail(error); } const avatarUrl = Object.hasOwn(values, 'avatarUrl') ? await uploadDataUri(values.avatarUrl, 'avatars') : undefined; const payload: any = { display_name: values.displayName, email: values.email, favorite_sport: values.favoriteSport, profile_color: values.profileColor, language: values.language, role: values.role }; if (avatarUrl !== undefined) payload.avatar_url = avatarUrl; Object.keys(payload).forEach((name) => payload[name] === undefined && delete payload[name]); const { data, error } = await supabase.from('profiles').update(payload).eq('id', id).select().single(); fail(error); return mapProfile(data); }
+export async function sbDeleteUser(id: string) { const { error } = await supabase.rpc('admin_delete_user', { target: id }); fail(error); }
+export async function sbMetrics(): Promise<AdminMetrics> { const [users, tournaments, active, teams, matches] = await Promise.all([supabase.from('profiles').select('*', { count: 'exact', head: true }), supabase.from('tournaments').select('*', { count: 'exact', head: true }), supabase.from('tournaments').select('*', { count: 'exact', head: true }).eq('status', 'published'), supabase.from('teams').select('*', { count: 'exact', head: true }), supabase.from('matches').select('*', { count: 'exact', head: true })]); return { users: users.count ?? 0, tournaments: tournaments.count ?? 0, activeTournaments: active.count ?? 0, teams: teams.count ?? 0, matches: matches.count ?? 0, databaseBytes: 0 }; }
+
+export async function sbListTeams() { const { data, error } = await supabase.from('teams').select('*').order('name'); fail(error); return data as Team[]; }
+export async function sbCreateTeam(values: Omit<Team, 'id' | 'created_by'>) { const created_by = await currentUserId(); const logo_url = await uploadDataUri(values.logo_url, 'logos'); const { data, error } = await supabase.from('teams').insert({ ...values, logo_url, created_by }).select().single(); fail(error); return data as Team; }
+export async function sbUpdateTeam(id: string, values: Omit<Team, 'id' | 'created_by'>) { const logo_url = await uploadDataUri(values.logo_url, 'logos'); const { error } = await supabase.from('teams').update({ ...values, logo_url }).eq('id', id); fail(error); }
+export async function sbDeleteTeam(id: string) { const { error } = await supabase.from('teams').delete().eq('id', id); fail(error); }
+
+export async function sbListTournaments() { const { data, error } = await supabase.from('tournaments').select('*').order('start_date'); fail(error); return data as Tournament[]; }
+export async function sbGetTournament(id: string) { const { data } = await supabase.from('tournaments').select('*').eq('id', id).maybeSingle(); return data as Tournament | null; }
+export async function sbCreateTournament(values: Omit<Tournament, 'id' | 'created_by' | 'status'>) { const created_by = await currentUserId(); const logo_url = await uploadDataUri(values.logo_url, 'logos'); const { data, error } = await supabase.from('tournaments').insert({ ...values, logo_url, created_by, status: 'draft' }).select().single(); fail(error); return data as Tournament; }
+export async function sbUpdateTournament(id: string, values: Partial<Omit<Tournament, 'id' | 'created_by'>>) { const payload: any = { ...values }; if (Object.hasOwn(values, 'logo_url')) payload.logo_url = await uploadDataUri(values.logo_url, 'logos'); const { data, error } = await supabase.from('tournaments').update(payload).eq('id', id).select().single(); fail(error); return data as Tournament; }
+export async function sbDeleteTournament(id: string) { const { error } = await supabase.from('tournaments').delete().eq('id', id); fail(error); }
+export async function sbTournamentTeams(id: string) { const { data, error } = await supabase.from('tournament_teams').select('team:teams(*)').eq('tournament_id', id); fail(error); return (data ?? []).map((item: any) => item.team) as Team[]; }
+export async function sbAddTournamentTeam(tournament_id: string, team_id: string) { const { error } = await supabase.from('tournament_teams').insert({ tournament_id, team_id }); fail(error); }
+export async function sbRemoveTournamentTeam(tournament_id: string, team_id: string) { const { error } = await supabase.from('tournament_teams').delete().match({ tournament_id, team_id }); fail(error); }
+
+export async function sbListSports(includeInactive = false) { let query = supabase.from('sports').select('*').order('name'); if (!includeInactive) query = query.eq('active', true); const { data, error } = await query; fail(error); return (data ?? []).map(mapSport); }
+export async function sbCreateSport(values: Omit<Sport, 'id'>) { const { data, error } = await supabase.from('sports').insert({ ...values, periods_config: JSON.parse(values.periods_config) }).select().single(); fail(error); return mapSport(data); }
+export async function sbUpdateSport(id: string, values: Partial<Omit<Sport, 'id'>>) { const payload: any = { ...values }; if (values.periods_config) payload.periods_config = JSON.parse(values.periods_config); const { data, error } = await supabase.from('sports').update(payload).eq('id', id).select().single(); fail(error); return mapSport(data); }
+export async function sbDeleteSport(id: string) { const { error } = await supabase.from('sports').delete().eq('id', id); fail(error); }
+
+export async function sbListMatches(tournamentId?: string) { let query = supabase.from('matches').select('*').order('match_date').order('match_time'); if (tournamentId) query = query.eq('tournament_id', tournamentId); const { data, error } = await query; fail(error); return data as Match[]; }
+export async function sbCreateMatch(values: Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at'>) { const { data, error } = await supabase.from('matches').insert({ ...values, status: 'scheduled' }).select().single(); fail(error); return data as Match; }
+export async function sbUpdateMatch(id: string, values: Partial<Omit<Match, 'id' | 'tournament_id'>>) { const { data, error } = await supabase.from('matches').update(values).eq('id', id).select().single(); fail(error); return data as Match; }
+export async function sbDeleteMatch(id: string) { const { error } = await supabase.from('matches').delete().eq('id', id); fail(error); }
+export async function sbRoundRobin(tournamentId: string, values: { match_date?: string; pitch_location?: string }) { const teams = await sbTournamentTeams(tournamentId); const existing = await sbListMatches(tournamentId); let created = 0; for (let home = 0; home < teams.length; home++) for (let away = home + 1; away < teams.length; away++) if (!existing.some((match) => new Set([match.home_team_id, match.away_team_id]).has(teams[home].id) && new Set([match.home_team_id, match.away_team_id]).has(teams[away].id))) { await sbCreateMatch({ tournament_id: tournamentId, home_team_id: teams[home].id, away_team_id: teams[away].id, match_date: values.match_date ?? new Date().toISOString().slice(0, 10), match_time: `${String(9 + Math.floor(created / 2)).padStart(2, '0')}:${created % 2 ? '30' : '00'}`, pitch_location: values.pitch_location ?? 'TBD' }); created++; } return { created }; }
+export async function sbGenerateAccess(matchId: string) { const { data, error } = await supabase.rpc('generate_match_access', { target_match: matchId }); fail(error); return data as MatchAccess; }
+export async function sbScorekeeperMatch(secret: string) { const { data, error } = await supabase.rpc('scorekeeper_match', { secret }); fail(error); return data as PublicMatch; }
+export async function sbPublicMatch(id: string) { const { data: match, error } = await supabase.from('matches').select('*, homeTeam:teams!matches_home_team_id_fkey(*), awayTeam:teams!matches_away_team_id_fkey(*), events:match_events(*)').eq('id', id).single(); fail(error); const { homeTeam, awayTeam, events, ...rest } = match as any; return { match: rest, homeTeam, awayTeam, events } as PublicMatch; }
+export async function sbRecordEvent(secret: string, event: Pick<MatchEvent, 'event_type' | 'team_id' | 'player_name'>) { const { error } = await supabase.rpc('record_match_event', { secret, event_name: event.event_type, target_team: event.team_id, player: event.player_name }); fail(error); }
+export async function sbUndoEvent(secret: string) { const { error } = await supabase.rpc('undo_match_event', { secret }); fail(error); }

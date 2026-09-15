@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ligadokapsy",
+    "name": "LigaDoKapsy",
     "slug": "ligadokapsy",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,11 +8,14 @@
     "scheme": "ligadokapsy",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "cz.ligadokapsy.app",
+      "supportsTablet": true
     },
     "android": {
+      "package": "cz.ligadokapsy.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,10 +31,17 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0F172A",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 120
         }
+      ],
+      "expo-localization",
+      "@react-native-community/datetimepicker",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        { "photosPermission": "LigaDoKapsy needs photo access to select profile and tournament images." }
       ]
     ],
     "experiments": {

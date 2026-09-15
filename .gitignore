@@ -31,7 +31,19 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.local
 .env*.local
+
+# local databases
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+/data/*
+!/data/.gitignore
+
+# deployment state
+.vercel/
 
 # typescript
 *.tsbuildinfo
