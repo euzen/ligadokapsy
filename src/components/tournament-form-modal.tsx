@@ -9,7 +9,7 @@ import { Field } from '@/components/ui/field';
 import { useSports } from '@/features/auth/use-local-data';
 import type { SportSlug, Tournament } from '@/types/database';
 
-type TournamentValues = Omit<Tournament, 'id' | 'created_by' | 'status'>;
+type TournamentValues = Omit<Tournament, 'id' | 'created_by' | 'status' | 'rosters_locked'>;
 
 export function TournamentFormModal({ tournament, onClose, onSave }: { tournament?: Tournament; onClose: () => void; onSave: (values: TournamentValues) => Promise<void> }) {
   const { t } = useTranslation();

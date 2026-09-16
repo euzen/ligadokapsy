@@ -49,10 +49,12 @@ create table if not exists public.tournaments (
 );
 
 create table if not exists public.tournament_teams (
+  id uuid primary key default gen_random_uuid(),
   tournament_id uuid not null references public.tournaments(id) on delete cascade,
   team_id uuid not null references public.teams(id) on delete cascade,
+  rosters_locked boolean not null default false,
   created_at timestamptz not null default now(),
-  primary key (tournament_id, team_id)
+  unique (tournament_id, team_id)
 );
 
 create table if not exists public.matches (
@@ -91,13 +93,42 @@ create table if not exists public.match_events (
   score_delta_home integer not null default 0,
   score_delta_away integer not null default 0,
   clock_seconds integer not null default 0,
+  roster_player_id uuid references public.tournament_rosters(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
 create index if not exists teams_created_by_idx on public.teams(created_by);
 create index if not exists tournaments_created_by_idx on public.tournaments(created_by);
 create index if not exists matches_tournament_idx on public.matches(tournament_id, match_date, match_time);
+
+create table if not exists public.team_rosters (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
+  player_name text not null,
+  jersey_number integer,
+  position text,
+  is_captain boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.tournament_rosters (
+  id uuid primary key default gen_random_uuid(),
+  tournament_team_id uuid not null references public.tournament_teams(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
+  player_name text not null,
+  jersey_number integer,
+  position text,
+  is_captain boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.tournaments add column if not exists rosters_locked boolean not null default false;
+
 create index if not exists match_events_match_idx on public.match_events(match_id, created_at);
+create index if not exists match_events_roster_idx on public.match_events(roster_player_id);
+create index if not exists tournament_rosters_team_idx on public.tournament_rosters(tournament_team_id);
+create index if not exists team_rosters_team_idx on public.team_rosters(team_id);
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -144,26 +175,29 @@ returns jsonb language plpgsql stable security definer set search_path = '' as $
 declare target uuid := public.valid_scorekeeper_access(secret); result jsonb;
 begin
   if target is null then raise exception 'Invalid or expired access'; end if;
-  select jsonb_build_object('match', to_jsonb(m), 'homeTeam', to_jsonb(h), 'awayTeam', to_jsonb(a), 'events', coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at) from public.match_events e where e.match_id = m.id), '[]'::jsonb)) into result
+  select jsonb_build_object('match', to_jsonb(m), 'homeTeam', to_jsonb(h), 'awayTeam', to_jsonb(a), 'events', coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at) from public.match_events e where e.match_id = m.id), '[]'::jsonb), 'homeRoster', coalesce((select jsonb_agg(to_jsonb(r)) from public.matches m2 join public.tournament_teams tt on tt.tournament_id = m2.tournament_id join public.tournament_rosters r on r.tournament_team_id = tt.id where m2.id = target and tt.team_id = m2.home_team_id), '[]'::jsonb), 'awayRoster', coalesce((select jsonb_agg(to_jsonb(r)) from public.matches m3 join public.tournament_teams tt on tt.tournament_id = m3.tournament_id join public.tournament_rosters r on r.tournament_team_id = tt.id where m3.id = target and tt.team_id = m3.away_team_id), '[]'::jsonb)) into result
   from public.matches m join public.teams h on h.id = m.home_team_id join public.teams a on a.id = m.away_team_id where m.id = target;
   return result;
 end;
 $$;
 
-create or replace function public.record_match_event(secret text, event_name text, target_team uuid default null, player text default null)
+create or replace function public.record_match_event(secret text, event_name text, target_team uuid default null, player text default null, roster uuid default null)
 returns void language plpgsql security definer set search_path = '' as $$
-declare target uuid := public.valid_scorekeeper_access(secret); m public.matches%rowtype; elapsed integer; dh integer := 0; da integer := 0;
+declare target uuid := public.valid_scorekeeper_access(secret); m public.matches%rowtype; elapsed integer; dh integer := 0; da integer := 0; player_name text := player; roster_user uuid;
 begin
   if target is null then raise exception 'Invalid or expired access'; end if;
   select * into m from public.matches where id = target for update;
   elapsed := m.clock_seconds + case when m.clock_started_at is null then 0 else extract(epoch from (now() - m.clock_started_at))::integer end;
+  if roster is not null then
+    select r.player_name, r.user_id into player_name, roster_user from public.matches mx join public.tournament_teams tt on tt.tournament_id = mx.tournament_id join public.tournament_rosters r on r.tournament_team_id = tt.id where mx.id = target and tt.team_id = target_team and r.id = roster;
+  end if;
   if event_name = 'score' then
     if target_team = m.home_team_id then dh := 1; elsif target_team = m.away_team_id then da := 1; else raise exception 'Invalid team'; end if;
     update public.matches set home_score = coalesce(home_score, 0) + dh, away_score = coalesce(away_score, 0) + da where id = target;
   elsif event_name = 'timer_start' then update public.matches set status = 'live', clock_started_at = now() where id = target;
   elsif event_name = 'timer_pause' then update public.matches set clock_seconds = elapsed, clock_started_at = null where id = target;
   end if;
-  insert into public.match_events(match_id, event_type, team_id, player_name, score_delta_home, score_delta_away, clock_seconds) values(target, event_name, target_team, player, dh, da, elapsed);
+  insert into public.match_events(match_id, event_type, team_id, player_name, roster_player_id, score_delta_home, score_delta_away, clock_seconds) values(target, event_name, target_team, player_name, roster, dh, da, elapsed);
 end;
 $$;
 
@@ -208,9 +242,11 @@ alter table public.tournament_teams enable row level security;
 alter table public.matches enable row level security;
 alter table public.match_access_codes enable row level security;
 alter table public.match_events enable row level security;
+alter table public.team_rosters enable row level security;
+alter table public.tournament_rosters enable row level security;
 
 do $$ declare tbl text; pol record; begin
-  for tbl in select unnest(array['profiles','sports','teams','tournaments','tournament_teams','matches','match_access_codes','match_events']) loop
+  for tbl in select unnest(array['profiles','sports','teams','tournaments','tournament_teams','matches','match_access_codes','match_events','team_rosters','tournament_rosters']) loop
     for pol in select policyname from pg_policies where schemaname='public' and tablename=tbl loop execute format('drop policy if exists %I on public.%I', pol.policyname, tbl); end loop;
   end loop;
 end $$;
@@ -231,13 +267,47 @@ create policy matches_read on public.matches for select using (exists(select 1 f
 create policy matches_manage on public.matches for all to authenticated using (public.can_manage_tournament(tournament_id)) with check (public.can_manage_tournament(tournament_id));
 create policy events_read on public.match_events for select using (exists(select 1 from public.matches m join public.tournaments t on t.id=m.tournament_id where m.id=match_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
 create policy access_manage on public.match_access_codes for all to authenticated using (exists(select 1 from public.matches m where m.id=match_id and public.can_manage_tournament(m.tournament_id))) with check (exists(select 1 from public.matches m where m.id=match_id and public.can_manage_tournament(m.tournament_id)));
+create policy team_rosters_read on public.team_rosters for select using (exists(select 1 from public.tournaments t join public.tournament_teams tt on tt.tournament_id=t.id where tt.team_id=team_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
+create policy team_rosters_manage on public.team_rosters for all to authenticated using (created_by=auth.uid() or public.is_admin()) with check (created_by=auth.uid() or public.is_admin());
+create policy tournament_rosters_read on public.tournament_rosters for select using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
+create policy tournament_rosters_manage on public.tournament_rosters for all to authenticated using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and public.can_manage_tournament(t.id))) with check (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and public.can_manage_tournament(t.id)));
+create policy tournament_teams_roster_lock on public.tournament_teams for update to authenticated using (public.can_manage_tournament(tournament_id)) with check (public.can_manage_tournament(tournament_id));
 
 revoke all on function public.valid_scorekeeper_access(text) from public;
 grant execute on function public.generate_match_access(uuid) to authenticated;
 grant execute on function public.scorekeeper_match(text) to anon, authenticated;
-grant execute on function public.record_match_event(text,text,uuid,text) to anon, authenticated;
+grant execute on function public.record_match_event(text,text,uuid,text,uuid) to anon, authenticated;
 grant execute on function public.undo_match_event(text) to anon, authenticated;
 grant execute on function public.admin_delete_user(uuid) to authenticated;
+
+create or replace function public.sync_master_roster(tournament_team_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare tt record; existing_count integer;
+begin
+  select * into tt from public.tournament_teams where id = tournament_team_id;
+  if tt is null then raise exception 'Tournament team not found'; end if;
+  if not public.can_manage_tournament(tt.tournament_id) then raise exception 'Not authorized'; end if;
+  select count(*) into existing_count from public.tournament_rosters where tournament_team_id = tournament_team_id;
+  if existing_count > 0 then raise exception 'Roster already exists'; end if;
+  insert into public.tournament_rosters(tournament_team_id, user_id, player_name, jersey_number, position, is_captain)
+  select tournament_team_id, user_id, player_name, jersey_number, position, is_captain from public.team_rosters where team_id = tt.team_id;
+end;
+$$;
+
+create or replace function public.player_stats(target uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare matches bigint; goals bigint; yellows bigint; reds bigint;
+begin
+  select count(distinct match_id) into matches from public.match_events where roster_player_id in (select id from public.tournament_rosters where user_id = target);
+  select count(*) into goals from public.match_events where event_type = 'score' and roster_player_id in (select id from public.tournament_rosters where user_id = target);
+  select count(*) into yellows from public.match_events where event_type = 'yellow_card' and roster_player_id in (select id from public.tournament_rosters where user_id = target);
+  select count(*) into reds from public.match_events where event_type = 'red_card' and roster_player_id in (select id from public.tournament_rosters where user_id = target);
+  return jsonb_build_object('matchesPlayed', matches, 'goals', goals, 'yellowCards', yellows, 'redCards', reds);
+end;
+$$;
+
+grant execute on function public.sync_master_roster(uuid) to authenticated;
+grant execute on function public.player_stats(uuid) to authenticated;
 
 insert into public.sports(name,code,active,scoring_type,periods_config) values
 ('Football','football',true,'goals','{"periods":2,"minutes":45}'),('Basketball','basketball',true,'points','{"periods":4,"minutes":10}'),('Tennis','tennis',true,'sets','{"bestOf":3}'),('Hockey','hockey',true,'goals','{"periods":3,"minutes":20}'),('Volleyball','volleyball',true,'sets','{"bestOf":5}') on conflict(code) do nothing;

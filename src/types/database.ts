@@ -36,11 +36,26 @@ export type Tournament = {
   status: TournamentStatus;
   logo_url: string | null;
   created_by: string;
+  rosters_locked: boolean;
 };
 
 export type TournamentTeam = {
+  id: string;
   tournament_id: string;
   team_id: string;
+  rosters_locked: boolean;
+};
+
+export type RosterPlayer = {
+  id: string;
+  tournament_team_id?: string;
+  team_id?: string;
+  user_id: string | null;
+  player_name: string;
+  jersey_number: number | null;
+  position: string | null;
+  is_captain: boolean;
+  created_at?: string;
 };
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'cancelled';
@@ -73,6 +88,7 @@ export type MatchEvent = {
   match_id: string;
   event_type: 'score' | 'yellow_card' | 'red_card' | 'timer_start' | 'timer_pause';
   team_id: string | null;
+  roster_player_id: string | null;
   player_name: string | null;
   score_delta_home: number;
   score_delta_away: number;
@@ -81,7 +97,14 @@ export type MatchEvent = {
 };
 
 export type MatchAccess = { pin: string; token: string; expires_at: string };
-export type PublicMatch = { match: Match; homeTeam: Team; awayTeam: Team; events: MatchEvent[] };
+export type PublicMatch = { match: Match; homeTeam: Team; awayTeam: Team; events: MatchEvent[]; homeRoster: RosterPlayer[]; awayRoster: RosterPlayer[] };
+
+export type PlayerStats = {
+  matchesPlayed: number;
+  goals: number;
+  yellowCards: number;
+  redCards: number;
+};
 
 export type Standing = {
   team: Team;
