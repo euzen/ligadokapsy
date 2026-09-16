@@ -73,6 +73,7 @@ export async function sbSyncMasterRoster(tournamentTeamId: string) { const { err
 export async function sbLinkRosterPlayer(tournamentTeamId: string, rosterId: string, userId: string | null) { const { error } = await supabase.from('tournament_rosters').update({ user_id: userId }).eq('id', rosterId); fail(error); }
 
 export async function sbPlayerStats(userId: string): Promise<PlayerStats> { const { data, error } = await supabase.rpc('player_stats', { target: userId }); fail(error); return data as PlayerStats; }
+export async function sbUserTeams(userId: string): Promise<Team[]> { const { data, error } = await supabase.rpc('user_teams', { target: userId }); fail(error); return (data ?? []) as Team[]; }
 
 export async function sbListSports(includeInactive = false) { let query = supabase.from('sports').select('*').order('name'); if (!includeInactive) query = query.eq('active', true); const { data, error } = await query; fail(error); return (data ?? []).map(mapSport); }
 export async function sbCreateSport(values: Omit<Sport, 'id'>) { const { data, error } = await supabase.from('sports').insert({ ...values, periods_config: JSON.parse(values.periods_config) }).select().single(); fail(error); return mapSport(data); }

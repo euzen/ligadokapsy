@@ -433,6 +433,24 @@ begin;
   grant execute on function public.scorekeeper_match(text) to public;
   grant execute on function public.record_match_event(text, text, uuid, text, uuid) to public;
   grant execute on function public.undo_match_event(text) to public;
+  create or replace function public.user_teams(target uuid)
+  returns setof public.teams
+  language sql
+  security definer
+  set search_path = ''
+  as $$
+    select distinct t.* from public.teams t
+    join public.team_rosters tr on tr.team_id = t.id
+    where tr.user_id = target
+    union
+    select distinct t.* from public.teams t
+    join public.tournament_teams tt on tt.team_id = t.id
+    join public.tournament_rosters tor on tor.tournament_team_id = tt.id
+    where tor.user_id = target
+    order by t.name
+  $$;
+
   grant execute on function public.player_stats(uuid) to authenticated;
   grant execute on function public.sync_master_roster(uuid) to authenticated;
+  grant execute on function public.user_teams(uuid) to authenticated;
 commit;
