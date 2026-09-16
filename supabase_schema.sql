@@ -104,6 +104,7 @@ create index if not exists matches_tournament_idx on public.matches(tournament_i
 create table if not exists public.team_rosters (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete cascade,
+  created_by uuid not null references public.profiles(id) on delete cascade,
   user_id uuid references public.profiles(id) on delete set null,
   player_name text not null,
   jersey_number integer,
@@ -267,8 +268,8 @@ create policy matches_read on public.matches for select using (exists(select 1 f
 create policy matches_manage on public.matches for all to authenticated using (public.can_manage_tournament(tournament_id)) with check (public.can_manage_tournament(tournament_id));
 create policy events_read on public.match_events for select using (exists(select 1 from public.matches m join public.tournaments t on t.id=m.tournament_id where m.id=match_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
 create policy access_manage on public.match_access_codes for all to authenticated using (exists(select 1 from public.matches m where m.id=match_id and public.can_manage_tournament(m.tournament_id))) with check (exists(select 1 from public.matches m where m.id=match_id and public.can_manage_tournament(m.tournament_id)));
-create policy team_rosters_read on public.team_rosters for select using (exists(select 1 from public.tournaments t join public.tournament_teams tt on tt.tournament_id=t.id where tt.team_id=team_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
-create policy team_rosters_manage on public.team_rosters for all to authenticated using (created_by=auth.uid() or public.is_admin()) with check (created_by=auth.uid() or public.is_admin());
+create policy team_rosters_read on public.team_rosters for select using (true);
+create policy team_rosters_manage on public.team_rosters for all to authenticated using (exists(select 1 from public.teams where id=team_id and (created_by=auth.uid() or public.is_admin()))) with check (exists(select 1 from public.teams where id=team_id and (created_by=auth.uid() or public.is_admin())));
 create policy tournament_rosters_read on public.tournament_rosters for select using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and (t.status='published' or t.created_by=auth.uid() or public.is_admin())));
 create policy tournament_rosters_manage on public.tournament_rosters for all to authenticated using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and public.can_manage_tournament(t.id))) with check (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id=tt.tournament_id where tt.id=tournament_team_id and public.can_manage_tournament(t.id)));
 create policy tournament_teams_roster_lock on public.tournament_teams for update to authenticated using (public.can_manage_tournament(tournament_id)) with check (public.can_manage_tournament(tournament_id));

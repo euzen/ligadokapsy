@@ -20,6 +20,7 @@ CREATE INDEX tournament_teams_team_idx ON tournament_teams(team_id);
 CREATE TABLE team_rosters (
   id TEXT PRIMARY KEY,
   team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   player_name TEXT NOT NULL,
   jersey_number INTEGER,
