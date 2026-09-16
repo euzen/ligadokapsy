@@ -13,7 +13,7 @@ import type { RosterPlayer } from '@/types/database';
 
 export default function TeamDetailScreen() {
   const { t } = useTranslation(); const { id } = useLocalSearchParams<{ id: string }>(); const { profile } = useAuth();
-  const { data: teams } = useTeams(); const { data: rosters, refresh } = useTeamRosters(id); const [search, setSearch] = useState(''); const [editing, setEditing] = useState<RosterPlayer | null>(null); const [creating, setCreating] = useState(false);
+  const { data: teams } = useTeams(); const { data: rosters, loading, refresh } = useTeamRosters(id); const [search, setSearch] = useState(''); const [editing, setEditing] = useState<RosterPlayer | null>(null); const [creating, setCreating] = useState(false);
   const team = teams.find((item) => item.id === id); const canManage = Boolean(profile && team && (profile.role === 'admin' || profile.id === team.created_by));
   const filtered = useMemo(() => rosters.filter((player) => player.player_name.toLowerCase().includes(search.toLowerCase())), [rosters, search]);
   if (!team) return <View className="flex-1 items-center justify-center bg-canvas"><Text className="text-2xl font-black text-ink">{t('teams.notFound')}</Text></View>;
