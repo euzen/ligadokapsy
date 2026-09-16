@@ -8,7 +8,7 @@ type AuthContextValue = {
   profile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (displayName: string, email: string, password: string) => Promise<void>;
+  signUp: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (values: EditableProfile) => Promise<void>;
 };
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     loading,
     signIn: async (email, password) => { const next = await signInLocal(email, password); setProfile(next); await i18n.changeLanguage(next.language); },
-    signUp: async (displayName, email, password) => { const next = await signUpLocal(displayName, email, password); setProfile(next); await i18n.changeLanguage(next.language); },
+    signUp: async (firstName, lastName, email, password) => { const next = await signUpLocal(firstName, lastName, email, password); setProfile(next); await i18n.changeLanguage(next.language); },
     signOut: async () => { await signOutLocal(); setProfile(null); },
     updateProfile: async (values) => {
       if (!profile) throw new Error('auth.required');

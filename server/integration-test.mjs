@@ -9,7 +9,7 @@ const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${t
 const userSignIn = await fetch(`${base}/auth/sign-in`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json({ email: 'user@ligadokapsy.cz', password: 'password' }) });
 if (!userSignIn.ok) throw new Error('Seeded user sign-in failed');
 const { token: userToken } = await userSignIn.json();
-const ownUpdate = await fetch(`${base}/users/user-demo`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` }, body: json({ displayName: 'Demo User' }) });
+const ownUpdate = await fetch(`${base}/users/user-demo`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` }, body: json({ firstName: 'Demo', lastName: 'User' }) });
 const adminUpdate = await fetch(`${base}/users/user-demo`, { method: 'PATCH', headers, body: json({ role: 'user' }) });
 if (!ownUpdate.ok || !adminUpdate.ok) throw new Error(`Profile update authorization failed (self ${ownUpdate.status}, admin ${adminUpdate.status})`);
 
@@ -22,10 +22,10 @@ const scoreUpdate = await fetch(`${base}/matches/${firstMatch.id}`, { method: 'P
 const matchDelete = await fetch(`${base}/matches/${firstMatch.id}`, { method: 'DELETE', headers });
 const tournamentDelete = await fetch(`${base}/tournaments/${temporaryTournament.id}`, { method: 'DELETE', headers });
 if (generated.created !== 3 || generatedMatches.length !== 3 || !scoreUpdate.ok || !matchDelete.ok || !tournamentDelete.ok) throw new Error('Match CRUD or round-robin integration failed');
-const temporaryUser = await fetch(`${base}/auth/sign-up`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json({ displayName: 'Delete Test', email: `delete-${Date.now()}@test.local`, password: 'password' }) }).then((response) => response.json());
+const temporaryUser = await fetch(`${base}/auth/sign-up`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json({ firstName: 'Delete', lastName: 'Test', email: `delete-${Date.now()}@test.local`, password: 'password' }) }).then((response) => response.json());
 const userDelete = await fetch(`${base}/users/${temporaryUser.profile.id}`, { method: 'DELETE', headers });
 if (!userDelete.ok) throw new Error('Hard delete user failed');
-const temporaryTeam = await fetch(`${base}/teams`, { method: 'POST', headers, body: json({ name: 'Delete Team', short_name: 'DEL', primary_sport: 'football', color: '#10B981', logo_url: null }) }).then((response) => response.json());
+const temporaryTeam = await fetch(`${base}/teams`, { method: 'POST', headers, body: json({ name: 'Delete Team', primary_sport: 'football', color: '#10B981', logo_url: null }) }).then((response) => response.json());
 const teamDelete = await fetch(`${base}/teams/${temporaryTeam.id}`, { method: 'DELETE', headers });
 if (!teamDelete.ok) throw new Error('Hard delete team failed');
 

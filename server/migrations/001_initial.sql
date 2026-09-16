@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
-  display_name TEXT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
@@ -27,7 +28,6 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS teams (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  short_name TEXT NOT NULL CHECK (length(short_name) BETWEEN 3 AND 4),
   primary_sport TEXT NOT NULL,
   color TEXT NOT NULL,
   logo_url TEXT,

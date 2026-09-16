@@ -2,7 +2,8 @@ export type AppRole = 'user' | 'admin';
 
 export type UserProfile = {
   id: string;
-  displayName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: AppRole;
   favoriteSport: string;
@@ -12,7 +13,7 @@ export type UserProfile = {
   language: 'cs' | 'en';
 };
 
-export type EditableProfile = Pick<UserProfile, 'displayName' | 'email' | 'favoriteSport' | 'avatarUrl' | 'profileColor' | 'language'>;
+export type EditableProfile = Pick<UserProfile, 'first_name' | 'last_name' | 'email' | 'favoriteSport' | 'avatarUrl' | 'profileColor' | 'language'>;
 
 export type SportSlug = string;
 export type TournamentStatus = 'draft' | 'published' | 'completed';
@@ -20,7 +21,6 @@ export type TournamentStatus = 'draft' | 'published' | 'completed';
 export type Team = {
   id: string;
   name: string;
-  short_name: string;
   primary_sport: SportSlug;
   color: string;
   logo_url: string | null;
@@ -51,7 +51,8 @@ export type RosterPlayer = {
   tournament_team_id?: string;
   team_id?: string;
   user_id: string | null;
-  player_name: string;
+  first_name: string;
+  last_name: string;
   jersey_number: number | null;
   position: string | null;
   is_captain: boolean;
@@ -126,3 +127,15 @@ export type AdminMetrics = {
   matches: number;
   databaseBytes: number;
 };
+
+export function fullName(profile: { first_name: string; last_name: string }) {
+  return `${profile.first_name} ${profile.last_name}`.trim();
+}
+
+export function rosterFullName(player: { first_name: string; last_name: string }) {
+  return `${player.first_name} ${player.last_name}`.trim();
+}
+
+export function initialsFromName(name: string) {
+  return name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+}

@@ -39,15 +39,15 @@ export async function signInLocal(email: string, password: string) {
   const result = await request<{ profile: UserProfile; token: string }>('/auth/sign-in', { method: 'POST', body: JSON.stringify({ email, password }) });
   await storeToken(result.token); return result.profile;
 }
-export async function signUpLocal(displayName: string, email: string, password: string) {
-  if (sb.isSupabaseMode) return sb.sbSignUp(displayName, email, password);
-  const result = await request<{ profile: UserProfile; token: string }>('/auth/sign-up', { method: 'POST', body: JSON.stringify({ displayName, email, password }) });
+export async function signUpLocal(firstName: string, lastName: string, email: string, password: string) {
+  if (sb.isSupabaseMode) return sb.sbSignUp(firstName, lastName, email, password);
+  const result = await request<{ profile: UserProfile; token: string }>('/auth/sign-up', { method: 'POST', body: JSON.stringify({ firstName, lastName, email, password }) });
   await storeToken(result.token); userListeners.forEach((listener) => listener()); return result.profile;
 }
 export async function restoreLocalSession() { if (sb.isSupabaseMode) return sb.sbRestoreSession(); try { return (await request<{ profile: UserProfile }>('/auth/me')).profile; } catch { return null; } }
 export async function signOutLocal() { if (sb.isSupabaseMode) return sb.sbSignOut(); await request('/auth/sign-out', { method: 'POST' }); sessionToken = null; if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(TOKEN_KEY); }
 export async function listLocalUsers() { if (sb.isSupabaseMode) return sb.sbListUsers(); return request<UserProfile[]>('/users'); }
-export async function updateLocalUser(id: string, values: Partial<EditableProfile> & { role?: AppRole }) { if (sb.isSupabaseMode) { const profile = await sb.sbUpdateUser(id, values); userListeners.forEach((listener) => listener()); return profile; } const profile = await request<UserProfile>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(values) }); userListeners.forEach((listener) => listener()); return profile; }
+export async function updateLocalUser(id: string, values: Partial<EditableProfile> & { role?: AppRole }) { if (sb.isSupabaseMode) { const profile = await sb.sbUpdateUser(id, values); userListeners.forEach((listener) => listener()); return profile; } const payload: any = { ...values }; if (values.first_name !== undefined) { payload.firstName = values.first_name; delete payload.first_name; } if (values.last_name !== undefined) { payload.lastName = values.last_name; delete payload.last_name; } const profile = await request<UserProfile>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }); userListeners.forEach((listener) => listener()); return profile; }
 export async function deleteLocalUser(id: string) { if (sb.isSupabaseMode) { await sb.sbDeleteUser(id); userListeners.forEach((listener) => listener()); dataListeners.forEach((listener) => listener()); return; } await request(`/users/${id}`, { method: 'DELETE' }); userListeners.forEach((listener) => listener()); dataListeners.forEach((listener) => listener()); }
 export async function getAdminMetrics() { if (sb.isSupabaseMode) return sb.sbMetrics(); return request<AdminMetrics>('/admin/metrics'); }
 export function subscribeLocalUsers(listener: () => void) { userListeners.add(listener); return () => userListeners.delete(listener); }

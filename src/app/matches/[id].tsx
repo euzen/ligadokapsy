@@ -5,9 +5,10 @@ import { Image, ScrollView, Text, View } from 'react-native';
 
 import { getPublicMatch } from '@/features/auth/local-db';
 import type { PublicMatch, Team } from '@/types/database';
+import { initialsFromName } from '@/types/database';
 
 function TeamCard({ team, score }: { team: Team; score: number | null }) {
-  return <View className="flex-1 items-center"><View style={{ backgroundColor: team.color }} className="h-20 w-20 items-center justify-center overflow-hidden rounded-2xl">{team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" /> : <Text className="text-xl font-black text-white">{team.short_name}</Text>}</View><Text className="mt-3 text-center text-lg font-black text-ink">{team.name}</Text><Text className="mt-3 text-7xl font-black text-ink">{score ?? 0}</Text></View>;
+  return <View className="flex-1 items-center"><View style={{ backgroundColor: team.color }} className="h-20 w-20 items-center justify-center overflow-hidden rounded-2xl">{team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" /> : <Text className="text-xl font-black text-white">{initialsFromName(team.name)}</Text>}</View><Text className="mt-3 text-center text-lg font-black text-ink">{team.name}</Text><Text className="mt-3 text-7xl font-black text-ink">{score ?? 0}</Text></View>;
 }
 
 function clock(seconds: number) { return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`; }

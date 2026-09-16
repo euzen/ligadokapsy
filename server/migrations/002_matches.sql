@@ -17,6 +17,3 @@ CREATE TABLE IF NOT EXISTS matches (
 
 CREATE INDEX IF NOT EXISTS matches_tournament_id_idx ON matches(tournament_id);
 CREATE INDEX IF NOT EXISTS matches_date_idx ON matches(match_date, match_time);
-
-INSERT OR IGNORE INTO matches (id, tournament_id, home_team_id, away_team_id, match_date, match_time, pitch_location, status)
-VALUES ('match-spring-1', 'tournament-spring', 'team-lions', 'team-wolves', '2026-05-10', '10:00', 'Main Pitch', 'scheduled');
