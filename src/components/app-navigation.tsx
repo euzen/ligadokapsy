@@ -9,7 +9,7 @@ export function AppNavigation() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
-  if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/scorekeeper') return null;
+  if (pathname === '/scorekeeper') return null;
   const items = [
     { label: t('nav.home'), path: '/' },
     { label: t('nav.tournaments'), path: '/tournaments' },
