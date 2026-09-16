@@ -24,6 +24,7 @@ export type Team = {
   primary_sport: SportSlug;
   color: string;
   logo_url: string | null;
+  is_private: boolean;
   created_by: string;
 };
 
@@ -35,6 +36,7 @@ export type Tournament = {
   start_date: string;
   status: TournamentStatus;
   logo_url: string | null;
+  is_private: boolean;
   created_by: string;
   rosters_locked: boolean;
 };
@@ -99,6 +101,15 @@ export type MatchEvent = {
 
 export type MatchAccess = { pin: string; token: string; expires_at: string };
 export type PublicMatch = { match: Match; homeTeam: Team; awayTeam: Team; events: MatchEvent[]; homeRoster: RosterPlayer[]; awayRoster: RosterPlayer[] };
+
+export type EntityShare = {
+  id: string;
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  access_level: 'view' | 'edit';
+};
 
 export type PlayerStats = {
   matchesPlayed: number;

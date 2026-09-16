@@ -88,7 +88,7 @@ export default function HomeScreen() {
                 >
                   <View className="flex-row items-center justify-between gap-3">
                     <View className="flex-1">
-                      <Text className="text-xl font-black text-ink">{tournament.name}</Text>
+                      <View className="flex-row flex-wrap items-center gap-2"><Text className="text-xl font-black text-ink">{tournament.name}</Text>{tournament.is_private ? <Text className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">🔒 {t('tournaments.privateBadge')}</Text> : null}</View>
                       <Text className="mt-1 text-sm text-muted">
                         {t(`sports.${tournament.sport}`)} · {tournament.location} · {new Date(tournament.start_date).toLocaleDateString()}
                       </Text>

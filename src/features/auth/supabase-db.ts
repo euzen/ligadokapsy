@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
-import type { AdminMetrics, AppRole, EditableProfile, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentTeam, UserProfile } from '@/types/database';
+import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentTeam, UserProfile } from '@/types/database';
 
 export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE === 'supabase';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
@@ -74,6 +74,12 @@ export async function sbLinkRosterPlayer(tournamentTeamId: string, rosterId: str
 
 export async function sbPlayerStats(userId: string): Promise<PlayerStats> { const { data, error } = await supabase.rpc('player_stats', { target: userId }); fail(error); return data as PlayerStats; }
 export async function sbUserTeams(userId: string): Promise<Team[]> { const { data, error } = await supabase.rpc('user_teams', { target: userId }); fail(error); return (data ?? []) as Team[]; }
+export async function sbListTeamShares(teamId: string): Promise<EntityShare[]> { const { data, error } = await supabase.from('entity_shares').select('id, user_id, access_level, user:profiles(email, first_name, last_name)').eq('entity_type', 'team').eq('entity_id', teamId); fail(error); return (data ?? []).map((item: any) => ({ id: item.id, user_id: item.user_id, email: item.user?.email ?? '', first_name: item.user?.first_name ?? '', last_name: item.user?.last_name ?? '', access_level: item.access_level })); }
+export async function sbAddTeamShare(teamId: string, userId: string, accessLevel: 'view' | 'edit' = 'view') { const { error } = await supabase.from('entity_shares').insert({ entity_type: 'team', entity_id: teamId, user_id: userId, access_level: accessLevel }); fail(error); }
+export async function sbRemoveTeamShare(teamId: string, userId: string) { const { error } = await supabase.from('entity_shares').delete().match({ entity_type: 'team', entity_id: teamId, user_id: userId }); fail(error); }
+export async function sbListTournamentShares(tournamentId: string): Promise<EntityShare[]> { const { data, error } = await supabase.from('entity_shares').select('id, user_id, access_level, user:profiles(email, first_name, last_name)').eq('entity_type', 'competition').eq('entity_id', tournamentId); fail(error); return (data ?? []).map((item: any) => ({ id: item.id, user_id: item.user_id, email: item.user?.email ?? '', first_name: item.user?.first_name ?? '', last_name: item.user?.last_name ?? '', access_level: item.access_level })); }
+export async function sbAddTournamentShare(tournamentId: string, userId: string, accessLevel: 'view' | 'edit' = 'view') { const { error } = await supabase.from('entity_shares').insert({ entity_type: 'competition', entity_id: tournamentId, user_id: userId, access_level: accessLevel }); fail(error); }
+export async function sbRemoveTournamentShare(tournamentId: string, userId: string) { const { error } = await supabase.from('entity_shares').delete().match({ entity_type: 'competition', entity_id: tournamentId, user_id: userId }); fail(error); }
 
 export async function sbListSports(includeInactive = false) { let query = supabase.from('sports').select('*').order('name'); if (!includeInactive) query = query.eq('active', true); const { data, error } = await query; fail(error); return (data ?? []).map(mapSport); }
 export async function sbCreateSport(values: Omit<Sport, 'id'>) { const { data, error } = await supabase.from('sports').insert({ ...values, periods_config: JSON.parse(values.periods_config) }).select().single(); fail(error); return mapSport(data); }

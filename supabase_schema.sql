@@ -36,6 +36,8 @@ create table if not exists public.teams (
   created_at timestamptz not null default now()
 );
 
+alter table public.teams add column if not exists is_private boolean not null default false;
+
 create table if not exists public.tournaments (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -47,6 +49,8 @@ create table if not exists public.tournaments (
   created_by uuid not null references public.profiles(id) on delete restrict,
   created_at timestamptz not null default now()
 );
+
+alter table public.tournaments add column if not exists is_private boolean not null default false;
 
 create table if not exists public.tournament_teams (
   id uuid primary key default gen_random_uuid(),
@@ -128,6 +132,19 @@ create table if not exists public.tournament_rosters (
 
 alter table public.tournaments add column if not exists rosters_locked boolean not null default false;
 
+create table if not exists public.entity_shares (
+  id uuid primary key default gen_random_uuid(),
+  entity_type text not null check (entity_type in ('team', 'competition')),
+  entity_id uuid not null,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  access_level text not null default 'view' check (access_level in ('view', 'edit')),
+  created_at timestamptz not null default now(),
+  unique (entity_type, entity_id, user_id)
+);
+
+create index if not exists entity_shares_entity_idx on public.entity_shares(entity_type, entity_id);
+create index if not exists entity_shares_user_idx on public.entity_shares(user_id, entity_type);
+
 create index if not exists match_events_match_idx on public.match_events(match_id, created_at);
 create index if not exists match_events_roster_idx on public.match_events(roster_player_id);
 create index if not exists team_rosters_team_idx on public.team_rosters(team_id);
@@ -154,36 +171,52 @@ create policy if not exists profiles_write on public.profiles for update to auth
 create policy if not exists sports_read on public.sports for select using (true);
 create policy if not exists sports_manage on public.sports for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
--- Teams: public read, owner/admin manage
-create policy if not exists teams_read on public.teams for select using (true);
+-- Teams: public read unless private; private visible to creator, admin, and shared users; owner/admin manage
+create policy if not exists teams_read on public.teams for select using (public.can_read_team(id));
 create policy if not exists teams_manage on public.teams for all to authenticated using (created_by = auth.uid() or public.is_admin()) with check (created_by = auth.uid() or public.is_admin());
 
--- Tournaments: public read published, owner/admin read/manage all
-create policy if not exists tournaments_read on public.tournaments for select using (status = 'published' or created_by = auth.uid() or public.is_admin());
+-- Tournaments: public read if published and not private; private visible to creator, admin, and shared users; owner/admin manage
+create policy if not exists tournaments_read on public.tournaments for select using ((status = 'published' and not is_private) or public.can_read_tournament(id));
 create policy if not exists tournaments_manage on public.tournaments for all to authenticated using (created_by = auth.uid() or public.is_admin()) with check (created_by = auth.uid() or public.is_admin());
 
 -- Tournament teams
-create policy if not exists tournament_teams_read on public.tournament_teams for select using (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.status = 'published' or t.created_by = auth.uid() or public.is_admin())));
+create policy if not exists tournament_teams_read on public.tournament_teams for select using (exists(select 1 from public.tournaments t where t.id = tournament_id and ((t.status = 'published' and not t.is_private) or public.can_read_tournament(t.id))));
 create policy if not exists tournament_teams_manage on public.tournament_teams for all to authenticated using (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.created_by = auth.uid() or public.is_admin()))) with check (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.created_by = auth.uid() or public.is_admin())));
 
 -- Matches
-create policy if not exists matches_read on public.matches for select using (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.status = 'published' or t.created_by = auth.uid() or public.is_admin())));
+create policy if not exists matches_read on public.matches for select using (public.can_read_tournament(tournament_id));
 create policy if not exists matches_manage on public.matches for all to authenticated using (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.created_by = auth.uid() or public.is_admin()))) with check (exists(select 1 from public.tournaments t where t.id = tournament_id and (t.created_by = auth.uid() or public.is_admin())));
 
 -- Match access codes: owner/admin manage, scorekeeper RPC bypasses RLS via security definer
 create policy if not exists match_access_codes_manage on public.match_access_codes for all to authenticated using (created_by = auth.uid() or public.is_admin()) with check (created_by = auth.uid() or public.is_admin());
 
--- Match events: public read when tournament published, owner/admin manage
-create policy if not exists match_events_read on public.match_events for select using (exists(select 1 from public.matches m join public.tournaments t on t.id = m.tournament_id where m.id = match_id and (t.status = 'published' or t.created_by = auth.uid() or public.is_admin())));
+-- Match events: public read when tournament accessible, owner/admin manage
+create policy if not exists match_events_read on public.match_events for select using (exists(select 1 from public.matches m where m.id = match_id and public.can_read_tournament(m.tournament_id)));
 create policy if not exists match_events_manage on public.match_events for all to authenticated using (exists(select 1 from public.matches m join public.tournaments t on t.id = m.tournament_id where m.id = match_id and (t.created_by = auth.uid() or public.is_admin()))) with check (exists(select 1 from public.matches m join public.tournaments t on t.id = m.tournament_id where m.id = match_id and (t.created_by = auth.uid() or public.is_admin())));
 
 -- Team rosters: public read when team appears in published tournament, owner/admin manage
 create policy if not exists team_rosters_read on public.team_rosters for select using (true);
 create policy if not exists team_rosters_manage on public.team_rosters for all to authenticated using (exists(select 1 from public.teams where id = team_id and (created_by = auth.uid() or public.is_admin()))) with check (exists(select 1 from public.teams where id = team_id and (created_by = auth.uid() or public.is_admin())));
 
--- Tournament rosters: public read when tournament published, owner/admin manage
-create policy if not exists tournament_rosters_read on public.tournament_rosters for select using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id = tt.tournament_id where tt.id = tournament_team_id and (t.status = 'published' or t.created_by = auth.uid() or public.is_admin())));
+-- Tournament rosters: public read when tournament accessible, owner/admin manage
+create policy if not exists tournament_rosters_read on public.tournament_rosters for select using (exists(select 1 from public.tournament_teams tt where tt.id = tournament_team_id and public.can_read_tournament(tt.tournament_id)));
 create policy if not exists tournament_rosters_manage on public.tournament_rosters for all to authenticated using (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id = tt.tournament_id where tt.id = tournament_team_id and (t.created_by = auth.uid() or public.is_admin()))) with check (exists(select 1 from public.tournament_teams tt join public.tournaments t on t.id = tt.tournament_id where tt.id = tournament_team_id and (t.created_by = auth.uid() or public.is_admin())));
+
+-- Entity shares: visible to entity owner, admin, and the recipient; manageable by owner/admin
+create policy if not exists entity_shares_read on public.entity_shares for select to authenticated using (
+  (entity_type = 'team' and exists(select 1 from public.teams where id = entity_id and created_by = auth.uid())) or
+  (entity_type = 'competition' and exists(select 1 from public.tournaments where id = entity_id and created_by = auth.uid())) or
+  user_id = auth.uid() or public.is_admin()
+);
+create policy if not exists entity_shares_manage on public.entity_shares for all to authenticated using (
+  (entity_type = 'team' and exists(select 1 from public.teams where id = entity_id and created_by = auth.uid())) or
+  (entity_type = 'competition' and exists(select 1 from public.tournaments where id = entity_id and created_by = auth.uid())) or
+  public.is_admin()
+) with check (
+  (entity_type = 'team' and exists(select 1 from public.teams where id = entity_id and created_by = auth.uid())) or
+  (entity_type = 'competition' and exists(select 1 from public.tournaments where id = entity_id and created_by = auth.uid())) or
+  public.is_admin()
+);
 
 -- Storage buckets
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
@@ -219,6 +252,42 @@ begin;
   set search_path = ''
   as $$
     select exists(select 1 from public.profiles where id = auth.uid() and role = 'admin')
+  $$;
+
+  create or replace function public.can_read_team(team_id uuid)
+  returns boolean
+  language sql
+  security definer
+  set search_path = ''
+  as $$
+    select exists(
+      select 1 from public.teams t
+      where t.id = team_id
+        and (
+          not t.is_private
+          or t.created_by = auth.uid()
+          or public.is_admin()
+          or exists(select 1 from public.entity_shares s where s.entity_type = 'team' and s.entity_id = t.id and s.user_id = auth.uid())
+        )
+    )
+  $$;
+
+  create or replace function public.can_read_tournament(tournament_id uuid)
+  returns boolean
+  language sql
+  security definer
+  set search_path = ''
+  as $$
+    select exists(
+      select 1 from public.tournaments t
+      where t.id = tournament_id
+        and (
+          not t.is_private
+          or t.created_by = auth.uid()
+          or public.is_admin()
+          or exists(select 1 from public.entity_shares s where s.entity_type = 'competition' and s.entity_id = t.id and s.user_id = auth.uid())
+        )
+    )
   $$;
 
   create or replace function public.handle_new_user()

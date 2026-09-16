@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import * as sb from '@/features/auth/supabase-db';
-import type { AdminMetrics, AppRole, EditableProfile, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentStatus, TournamentTeam, UserProfile } from '@/types/database';
+import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentStatus, TournamentTeam, UserProfile } from '@/types/database';
 
 const browserHost = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'android' ? 'http://10.0.2.2:3210/api' : `http://${browserHost}:3210/api`);
@@ -89,6 +89,12 @@ export async function syncMasterRoster(tournamentTeamId: string, _actor: UserPro
 export async function linkRosterPlayer(tournamentTeamId: string, rosterId: string, userId: string | null, _actor: UserProfile) { if (sb.isSupabaseMode) { await sb.sbLinkRosterPlayer(tournamentTeamId, rosterId, userId); dataListeners.forEach((listener) => listener()); return; } await request(`/tournament-teams/${tournamentTeamId}/rosters/${rosterId}/link`, { method: 'PATCH', body: JSON.stringify({ userId }) }); dataListeners.forEach((listener) => listener()); }
 export async function playerStats(userId: string): Promise<PlayerStats> { if (sb.isSupabaseMode) return sb.sbPlayerStats(userId); return request<PlayerStats>(`/users/${userId}/stats`); }
 export async function userTeams(userId: string): Promise<Team[]> { if (sb.isSupabaseMode) return sb.sbUserTeams(userId); return request<Team[]>(`/users/${userId}/teams`); }
+export async function listTeamShares(teamId: string): Promise<EntityShare[]> { if (sb.isSupabaseMode) return sb.sbListTeamShares(teamId); return request<EntityShare[]>(`/teams/${teamId}/shares`); }
+export async function addTeamShare(teamId: string, userId: string, accessLevel: 'view' | 'edit' = 'view') { if (sb.isSupabaseMode) { await sb.sbAddTeamShare(teamId, userId, accessLevel); dataListeners.forEach((listener) => listener()); return; } await request(`/teams/${teamId}/shares`, { method: 'POST', body: JSON.stringify({ userId, accessLevel }) }); dataListeners.forEach((listener) => listener()); }
+export async function removeTeamShare(teamId: string, userId: string) { if (sb.isSupabaseMode) { await sb.sbRemoveTeamShare(teamId, userId); dataListeners.forEach((listener) => listener()); return; } await request(`/teams/${teamId}/shares/${userId}`, { method: 'DELETE' }); dataListeners.forEach((listener) => listener()); }
+export async function listTournamentShares(tournamentId: string): Promise<EntityShare[]> { if (sb.isSupabaseMode) return sb.sbListTournamentShares(tournamentId); return request<EntityShare[]>(`/tournaments/${tournamentId}/shares`); }
+export async function addTournamentShare(tournamentId: string, userId: string, accessLevel: 'view' | 'edit' = 'view') { if (sb.isSupabaseMode) { await sb.sbAddTournamentShare(tournamentId, userId, accessLevel); dataListeners.forEach((listener) => listener()); return; } await request(`/tournaments/${tournamentId}/shares`, { method: 'POST', body: JSON.stringify({ userId, accessLevel }) }); dataListeners.forEach((listener) => listener()); }
+export async function removeTournamentShare(tournamentId: string, userId: string) { if (sb.isSupabaseMode) { await sb.sbRemoveTournamentShare(tournamentId, userId); dataListeners.forEach((listener) => listener()); return; } await request(`/tournaments/${tournamentId}/shares/${userId}`, { method: 'DELETE' }); dataListeners.forEach((listener) => listener()); }
 export async function generateMatchAccess(matchId: string) { if (sb.isSupabaseMode) return sb.sbGenerateAccess(matchId); return request<MatchAccess>(`/matches/${matchId}/access`, { method: 'POST' }); }
 export async function getScorekeeperMatch(secret: string) { if (sb.isSupabaseMode) return sb.sbScorekeeperMatch(secret); return request<PublicMatch>('/scorekeeper/access', { method: 'POST', body: JSON.stringify({ secret }) }); }
 export async function getPublicMatch(id: string) { if (sb.isSupabaseMode) return sb.sbPublicMatch(id); return request<PublicMatch>(`/public/matches/${id}`); }
