@@ -7,7 +7,7 @@ import { RosterPlayerModal } from '@/components/roster-player-modal';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { createTeamRoster, deleteTeamRoster, updateTeamRoster } from '@/features/auth/local-db';
-import { useTeams } from '@/features/auth/use-local-data';
+import { useTeamRosters, useTeams } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 import type { RosterPlayer } from '@/types/database';
 
