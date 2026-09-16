@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { listMatches, listSports, listTeams, listTournamentRosters, listTournaments, listTournamentTeamAssignments, listTournamentTeams, subscribeLocalData } from '@/features/auth/local-db';
+import { listMatches, listSports, listTeamRosters, listTeams, listTournamentRosters, listTournaments, listTournamentTeamAssignments, listTournamentTeams, subscribeLocalData } from '@/features/auth/local-db';
 import type { Match, RosterPlayer, Sport, Team, Tournament } from '@/types/database';
 
 type TournamentTeam = { id: string; tournament_id: string; team_id: string; rosters_locked: boolean };
+
+export function useTeamRosters(teamId: string) {
+  const loader = useCallback(() => listTeamRosters(teamId), [teamId]);
+  return useCollection<RosterPlayer>(loader);
+}
 
 function useCollection<T>(loader: () => Promise<T[]>) {
   const [data, setData] = useState<T[]>([]);

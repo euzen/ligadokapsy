@@ -1,22 +1,21 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { RosterPlayerModal } from '@/components/roster-player-modal';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
-import { createTeamRoster, deleteTeamRoster, listTeamRosters, updateTeamRoster } from '@/features/auth/local-db';
+import { createTeamRoster, deleteTeamRoster, updateTeamRoster } from '@/features/auth/local-db';
 import { useTeams } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 import type { RosterPlayer } from '@/types/database';
 
 export default function TeamDetailScreen() {
   const { t } = useTranslation(); const { id } = useLocalSearchParams<{ id: string }>(); const { profile } = useAuth();
-  const { data: teams } = useTeams(); const [rosters, setRosters] = useState<RosterPlayer[]>([]); const [loading, setLoading] = useState(false); const [search, setSearch] = useState(''); const [editing, setEditing] = useState<RosterPlayer | null>(null); const [creating, setCreating] = useState(false);
+  const { data: teams } = useTeams(); const { data: rosters, refresh } = useTeamRosters(id); const [search, setSearch] = useState(''); const [editing, setEditing] = useState<RosterPlayer | null>(null); const [creating, setCreating] = useState(false);
   const team = teams.find((item) => item.id === id); const canManage = Boolean(profile && team && (profile.role === 'admin' || profile.id === team.created_by));
   const filtered = useMemo(() => rosters.filter((player) => player.player_name.toLowerCase().includes(search.toLowerCase())), [rosters, search]);
-  useEffect(() => { let cancelled = false; const refresh = async () => { if (!id) return; setLoading(true); try { const data = await listTeamRosters(id); if (!cancelled) setRosters(data); } finally { if (!cancelled) setLoading(false); } }; void refresh(); return () => { cancelled = true; }; }, [id]);
   if (!team) return <View className="flex-1 items-center justify-center bg-canvas"><Text className="text-2xl font-black text-ink">{t('teams.notFound')}</Text></View>;
   const save = async (values: Omit<RosterPlayer, 'id' | 'tournament_team_id' | 'team_id' | 'user_id' | 'created_by'>) => { if (!profile) return; if (editing) { await updateTeamRoster(editing.id, values, profile); setEditing(null); } else { await createTeamRoster(team.id, values, profile); setCreating(false); } await refresh(); };
   const remove = async (player: RosterPlayer) => { if (!profile) return; await deleteTeamRoster(player.id, profile); await refresh(); };
