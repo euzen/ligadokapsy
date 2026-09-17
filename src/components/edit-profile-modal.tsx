@@ -10,13 +10,13 @@ import type { EditableProfile, UserProfile } from '@/types/database';
 
 export function EditProfileModal({ profile, onClose, onSave }: { profile: UserProfile; onClose: () => void; onSave: (values: EditableProfile) => Promise<void> }) {
   const { t } = useTranslation();
-  const [firstName, setFirstName] = useState(profile.first_name);
-  const [lastName, setLastName] = useState(profile.last_name);
-  const [email, setEmail] = useState(profile.email);
-  const [sport, setSport] = useState(profile.favoriteSport);
-  const [avatar, setAvatar] = useState<string | null>(profile.avatarUrl);
-  const [color, setColor] = useState(profile.profileColor);
-  const [language, setLanguage] = useState<'cs' | 'en'>(profile.language);
+  const [firstName, setFirstName] = useState(profile.first_name ?? '');
+  const [lastName, setLastName] = useState(profile.last_name ?? '');
+  const [email, setEmail] = useState(profile.email ?? '');
+  const [sport, setSport] = useState(profile.favoriteSport ?? 'football');
+  const [avatar, setAvatar] = useState<string | null>(profile.avatarUrl ?? null);
+  const [color, setColor] = useState(profile.profileColor ?? '#10B981');
+  const [language, setLanguage] = useState<'cs' | 'en'>(profile.language ?? 'cs');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const save = async () => { setError(''); setSaving(true); try { await onSave({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim(), favoriteSport: sport, avatarUrl: avatar, profileColor: color, language }); onClose(); } catch (reason) { setError(t(reason instanceof Error ? reason.message : 'request.failed')); } finally { setSaving(false); } };

@@ -4,6 +4,39 @@
 -- Safe to run multiple times (uses IF NOT EXISTS / CREATE OR REPLACE).
 -- =====================================================
 
+-- 0a. Profiles: split display_name into first_name + last_name
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS first_name text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_name text;
+-- Migrate existing display_name data if column exists
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'display_name') THEN
+    UPDATE public.profiles SET
+      first_name = coalesce(split_part(display_name, ' ', 1), 'User'),
+      last_name = coalesce(nullif(substring(display_name from position(' ' in display_name) + 1), display_name), '')
+    WHERE first_name IS NULL;
+    ALTER TABLE public.profiles ALTER COLUMN first_name SET NOT NULL;
+    ALTER TABLE public.profiles ALTER COLUMN first_name SET DEFAULT 'User';
+    ALTER TABLE public.profiles ALTER COLUMN last_name SET NOT NULL;
+    ALTER TABLE public.profiles ALTER COLUMN last_name SET DEFAULT '';
+    ALTER TABLE public.profiles DROP COLUMN display_name;
+  ELSE
+    -- first_name/last_name already exist, just ensure NOT NULL
+    UPDATE public.profiles SET first_name = 'User' WHERE first_name IS NULL;
+    UPDATE public.profiles SET last_name = '' WHERE last_name IS NULL;
+    ALTER TABLE public.profiles ALTER COLUMN first_name SET NOT NULL;
+    ALTER TABLE public.profiles ALTER COLUMN first_name SET DEFAULT 'User';
+    ALTER TABLE public.profiles ALTER COLUMN last_name SET NOT NULL;
+    ALTER TABLE public.profiles ALTER COLUMN last_name SET DEFAULT '';
+  END IF;
+END $$;
+
+-- 0b. Teams: remove short_name if exists
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'teams' AND column_name = 'short_name') THEN
+    ALTER TABLE public.teams DROP COLUMN short_name;
+  END IF;
+END $$;
+
 -- 1. Add is_private columns
 ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS is_private boolean NOT NULL DEFAULT false;
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS is_private boolean NOT NULL DEFAULT false;
@@ -136,6 +169,38 @@ AS $$
       )
   )
 $$;
+
+-- 9b. Update handle_new_user trigger for first_name/last_name
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  preferred_language text;
+BEGIN
+  preferred_language := coalesce(new.raw_user_meta_data->>'language', 'en');
+  IF preferred_language NOT IN ('cs', 'en') THEN preferred_language := 'en'; END IF;
+  INSERT INTO public.profiles (id, first_name, last_name, email, role, favorite_sport, profile_color, language)
+  VALUES (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'first_name', 'User'),
+    coalesce(new.raw_user_meta_data->>'last_name', ''),
+    new.email,
+    'user',
+    'football',
+    '#10B981',
+    preferred_language
+  );
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 10. Updated RLS policies for teams (privacy-aware)
 DROP POLICY IF EXISTS teams_read ON public.teams;
