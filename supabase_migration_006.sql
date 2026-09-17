@@ -18,6 +18,24 @@ DO $$ BEGIN
     ALTER TABLE public.tournament_teams ADD COLUMN id uuid DEFAULT gen_random_uuid() NOT NULL;
   END IF;
 END $$;
+
+-- Ensure id has a UNIQUE constraint so it can be referenced as FK
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_schema = 'public' AND table_name = 'tournament_teams' AND constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+      AND constraint_name IN (
+        SELECT constraint_name FROM information_schema.constraint_column_usage
+        WHERE table_schema = 'public' AND table_name = 'tournament_teams' AND column_name = 'id'
+      )
+  ) THEN
+    ALTER TABLE public.tournament_teams ADD CONSTRAINT tournament_teams_id_unique UNIQUE (id);
+  END IF;
+END $$;
+
+-- Backfill any NULL ids
+UPDATE public.tournament_teams SET id = gen_random_uuid() WHERE id IS NULL;
+
 ALTER TABLE public.tournament_teams ADD COLUMN IF NOT EXISTS rosters_locked boolean NOT NULL DEFAULT false;
 
 -- 4. Ensure team_rosters table
