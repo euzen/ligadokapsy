@@ -407,7 +407,9 @@ begin;
       'match', row_to_json(v_match),
       'homeTeam', (select row_to_json(t) from public.teams t where t.id = v_match.home_team_id),
       'awayTeam', (select row_to_json(t) from public.teams t where t.id = v_match.away_team_id),
-      'events', (select coalesce(jsonb_agg(row_to_json(e) order by e.created_at, e.id), '[]'::jsonb) from public.match_events e where e.match_id = v_match.id)
+      'events', (select coalesce(jsonb_agg(row_to_json(e) order by e.created_at, e.id), '[]'::jsonb) from public.match_events e where e.match_id = v_match.id),
+      'homeRoster', (select coalesce(jsonb_agg(row_to_json(r) order by r.is_captain desc, r.last_name, r.first_name), '[]'::jsonb) from public.tournament_rosters r join public.tournament_teams tt on tt.id = r.tournament_team_id where tt.tournament_id = v_match.tournament_id and tt.team_id = v_match.home_team_id),
+      'awayRoster', (select coalesce(jsonb_agg(row_to_json(r) order by r.is_captain desc, r.last_name, r.first_name), '[]'::jsonb) from public.tournament_rosters r join public.tournament_teams tt on tt.id = r.tournament_team_id where tt.tournament_id = v_match.tournament_id and tt.team_id = v_match.away_team_id)
     );
   end;
   $$;
@@ -423,18 +425,24 @@ begin;
     v_match public.matches%rowtype;
     v_delta_home int := 0;
     v_delta_away int := 0;
+    v_clock int;
   begin
     select * into v_access from public.match_access_codes where (pin_hash = secret or token::text = secret) and expires_at > now();
     if not found then raise exception 'Invalid or expired access'; end if;
     select * into v_match from public.matches where id = v_access.match_id;
+    v_clock := coalesce(v_match.clock_seconds, 0) + coalesce(extract(epoch from (now() - v_match.clock_started_at))::int, 0);
     if event_name = 'score' then
       if target_team = v_match.home_team_id then v_delta_home := 1; elsif target_team = v_match.away_team_id then v_delta_away := 1; else raise exception 'Invalid team'; end if;
       update public.matches set home_score = coalesce(home_score, 0) + v_delta_home, away_score = coalesce(away_score, 0) + v_delta_away where id = v_match.id;
-    elsif event_name not in ('yellow_card', 'red_card', 'timer_start', 'timer_pause') then
+    elsif event_name = 'timer_start' then
+      update public.matches set status = 'live', clock_started_at = now() where id = v_match.id;
+    elsif event_name = 'timer_pause' then
+      update public.matches set clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
+    elsif event_name not in ('yellow_card', 'red_card') then
       raise exception 'Invalid event type';
     end if;
     insert into public.match_events (match_id, event_type, team_id, player_name, roster_player_id, score_delta_home, score_delta_away, clock_seconds)
-    values (v_match.id, event_name, target_team, player, roster, v_delta_home, v_delta_away, v_match.clock_seconds + coalesce(extract(epoch from (now() - v_match.clock_started_at))::int, 0));
+    values (v_match.id, event_name, target_team, player, roster, v_delta_home, v_delta_away, v_clock);
   end;
   $$;
 
