@@ -205,7 +205,8 @@ CREATE POLICY match_events_read ON public.match_events FOR SELECT USING (EXISTS(
 DROP POLICY IF EXISTS match_events_manage ON public.match_events;
 CREATE POLICY match_events_manage ON public.match_events FOR ALL TO authenticated USING (EXISTS(SELECT 1 FROM public.matches m JOIN public.tournaments t ON t.id = m.tournament_id WHERE m.id = match_id AND (t.created_by = auth.uid() OR public.is_admin()))) WITH CHECK (EXISTS(SELECT 1 FROM public.matches m JOIN public.tournaments t ON t.id = m.tournament_id WHERE m.id = match_id AND (t.created_by = auth.uid() OR public.is_admin())));
 
--- 18. Scorekeeper RPCs
+-- 18. Scorekeeper RPCs (drop first to allow return type changes)
+DROP FUNCTION IF EXISTS public.generate_match_access(uuid);
 CREATE OR REPLACE FUNCTION public.generate_match_access(target_match uuid)
 RETURNS TABLE(pin text, token uuid, expires_at timestamptz)
 LANGUAGE plpgsql
@@ -240,6 +241,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.scorekeeper_match(text);
 CREATE OR REPLACE FUNCTION public.scorekeeper_match(secret text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -262,6 +264,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.record_match_event(text, text, uuid, text, uuid);
 CREATE OR REPLACE FUNCTION public.record_match_event(secret text, event_name text, target_team uuid, player text, roster uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -288,6 +291,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.undo_match_event(text);
 CREATE OR REPLACE FUNCTION public.undo_match_event(secret text)
 RETURNS void
 LANGUAGE plpgsql
@@ -308,6 +312,7 @@ END;
 $$;
 
 -- 19. Player stats and user_teams RPCs
+DROP FUNCTION IF EXISTS public.player_stats(uuid);
 CREATE OR REPLACE FUNCTION public.player_stats(target uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -328,6 +333,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.sync_master_roster(uuid);
 CREATE OR REPLACE FUNCTION public.sync_master_roster(tournament_team_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -349,6 +355,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.user_teams(uuid);
 CREATE OR REPLACE FUNCTION public.user_teams(target uuid)
 RETURNS setof public.teams
 LANGUAGE sql
@@ -367,6 +374,7 @@ AS $$
 $$;
 
 -- 20. Admin delete user
+DROP FUNCTION IF EXISTS public.admin_delete_user(uuid);
 CREATE OR REPLACE FUNCTION public.admin_delete_user(target uuid)
 RETURNS void
 LANGUAGE plpgsql
