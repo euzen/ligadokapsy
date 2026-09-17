@@ -74,6 +74,7 @@ create table if not exists public.matches (
   away_score integer check (away_score is null or away_score >= 0),
   clock_seconds integer not null default 0 check (clock_seconds >= 0),
   clock_started_at timestamptz,
+  current_period integer not null default 0,
   created_at timestamptz not null default now(),
   check (home_team_id <> away_team_id)
 );
@@ -435,9 +436,15 @@ begin;
       if target_team = v_match.home_team_id then v_delta_home := 1; elsif target_team = v_match.away_team_id then v_delta_away := 1; else raise exception 'Invalid team'; end if;
       update public.matches set home_score = coalesce(home_score, 0) + v_delta_home, away_score = coalesce(away_score, 0) + v_delta_away where id = v_match.id;
     elsif event_name = 'timer_start' then
-      update public.matches set status = 'live', clock_started_at = now() where id = v_match.id;
+      update public.matches set status = 'live', clock_started_at = now(), current_period = case when current_period = 0 then 1 else current_period end where id = v_match.id;
     elsif event_name = 'timer_pause' then
       update public.matches set clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
+    elsif event_name = 'period_end' then
+      update public.matches set clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
+    elsif event_name = 'period_start' then
+      update public.matches set status = 'live', clock_started_at = now(), clock_seconds = 0, current_period = coalesce(v_match.current_period, 0) + 1 where id = v_match.id;
+    elsif event_name = 'match_end' then
+      update public.matches set status = 'finished', clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
     elsif event_name not in ('yellow_card', 'red_card') then
       raise exception 'Invalid event type';
     end if;

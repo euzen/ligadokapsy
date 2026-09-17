@@ -43,7 +43,7 @@ export default function TournamentDetailScreen() {
   const add = async (teamId: string) => { if (profile) await addTeamToTournament(id, teamId, profile); };
   const createVirtual = async (values: Omit<Team, 'id' | 'created_by'>) => { if (profile) { const team = await createTeam(values, profile); await addTeamToTournament(id, team.id, profile); } };
   const saveTournament = async (values: Omit<Tournament, 'id' | 'created_by' | 'status' | 'rosters_locked'>) => { if (profile) await updateTournament(id, values, profile); };
-  const saveMatch = async (values: Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at'>) => { if (profile) await createMatch(values, profile); };
+  const saveMatch = async (values: Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at' | 'current_period'>) => { if (profile) await createMatch(values, profile); };
   const generate = async () => { if (profile) { const result = await generateRoundRobin(id, {}, profile); setGenerated(result.created); } };
   const rosterLocked = Boolean(selectedAssignmentToShow?.rosters_locked);
   const addRosterPlayer = async (values: Omit<RosterPlayer, 'id' | 'tournament_team_id' | 'user_id'>) => { if (profile && selectedAssignmentToShow) { await createTournamentRoster(selectedAssignmentToShow.id, values, profile); setAddingPlayer(false); } };

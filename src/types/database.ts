@@ -75,6 +75,7 @@ export type Match = {
   away_score: number | null;
   clock_seconds: number;
   clock_started_at: string | null;
+  current_period: number;
 };
 
 export type Sport = {
@@ -89,7 +90,7 @@ export type Sport = {
 export type MatchEvent = {
   id: string;
   match_id: string;
-  event_type: 'score' | 'yellow_card' | 'red_card' | 'timer_start' | 'timer_pause';
+  event_type: 'score' | 'yellow_card' | 'red_card' | 'timer_start' | 'timer_pause' | 'period_end' | 'period_start' | 'match_end';
   team_id: string | null;
   roster_player_id: string | null;
   player_name: string | null;

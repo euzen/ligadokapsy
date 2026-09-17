@@ -41,6 +41,9 @@ END $$;
 ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS is_private boolean NOT NULL DEFAULT false;
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS is_private boolean NOT NULL DEFAULT false;
 
+-- 1b. Add current_period to matches
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS current_period integer NOT NULL DEFAULT 0;
+
 -- 2. Ensure rosters_locked on tournaments
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS rosters_locked boolean NOT NULL DEFAULT false;
 
@@ -354,9 +357,15 @@ BEGIN
     IF target_team = v_match.home_team_id THEN v_delta_home := 1; ELSIF target_team = v_match.away_team_id THEN v_delta_away := 1; ELSE RAISE EXCEPTION 'Invalid team'; END IF;
     UPDATE public.matches SET home_score = coalesce(home_score, 0) + v_delta_home, away_score = coalesce(away_score, 0) + v_delta_away WHERE id = v_match.id;
   ELSIF event_name = 'timer_start' THEN
-    UPDATE public.matches SET status = 'live', clock_started_at = now() WHERE id = v_match.id;
+    UPDATE public.matches SET status = 'live', clock_started_at = now(), current_period = CASE WHEN current_period = 0 THEN 1 ELSE current_period END WHERE id = v_match.id;
   ELSIF event_name = 'timer_pause' THEN
     UPDATE public.matches SET clock_seconds = v_clock, clock_started_at = NULL WHERE id = v_match.id;
+  ELSIF event_name = 'period_end' THEN
+    UPDATE public.matches SET clock_seconds = v_clock, clock_started_at = NULL WHERE id = v_match.id;
+  ELSIF event_name = 'period_start' THEN
+    UPDATE public.matches SET status = 'live', clock_started_at = now(), clock_seconds = 0, current_period = coalesce(v_match.current_period, 0) + 1 WHERE id = v_match.id;
+  ELSIF event_name = 'match_end' THEN
+    UPDATE public.matches SET status = 'finished', clock_seconds = v_clock, clock_started_at = NULL WHERE id = v_match.id;
   ELSIF event_name NOT IN ('yellow_card', 'red_card') THEN
     RAISE EXCEPTION 'Invalid event type';
   END IF;
