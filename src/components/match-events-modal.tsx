@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { createMatchEvent, deleteMatchEvent, listMatchEvents, listTournamentRosters, listTournamentTeamAssignments, updateMatchEvent } from '@/features/auth/local-db';
-import type { Match, MatchEvent, RosterPlayer, Team } from '@/types/database';
+import type { Match, MatchEvent, MatchEventMetadata, RosterPlayer, Team } from '@/types/database';
 import { rosterFullName } from '@/types/database';
 
 const EVENT_TYPES: MatchEvent['event_type'][] = ['score', 'yellow_card', 'red_card', 'timer_start', 'timer_pause', 'period_end', 'period_start', 'match_end'];
 
 export function MatchEventsModal({ match, teams, onClose }: { match: Match; teams: Team[]; onClose: () => void }) {
   const { t } = useTranslation();
+  const scrollRef = useRef<ScrollView>(null);
+  const formRef = useRef<View>(null);
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -23,6 +25,7 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
   const [clockSeconds, setClockSeconds] = useState('');
   const [scoreDeltaHome, setScoreDeltaHome] = useState('0');
   const [scoreDeltaAway, setScoreDeltaAway] = useState('0');
+  const [goalType, setGoalType] = useState<MatchEventMetadata['goal_type'] | null>(null);
   const [homeRoster, setHomeRoster] = useState<RosterPlayer[]>([]);
   const [awayRoster, setAwayRoster] = useState<RosterPlayer[]>([]);
 
@@ -53,6 +56,7 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
     setClockSeconds('');
     setScoreDeltaHome('0');
     setScoreDeltaAway('0');
+    setGoalType(null);
   }, [match.home_team_id]);
 
   const edit = useCallback((evt: MatchEvent) => {
@@ -64,6 +68,11 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
     setClockSeconds(evt.clock_seconds?.toString() ?? '');
     setScoreDeltaHome(evt.score_delta_home?.toString() ?? '0');
     setScoreDeltaAway(evt.score_delta_away?.toString() ?? '0');
+    setGoalType(evt.metadata?.goal_type ?? null);
+    // Defer scroll to next frame so layout is ready
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   }, []);
 
   const save = async () => {
@@ -74,6 +83,7 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
         team_id: teamId,
         player_name: playerName || null,
         roster_player_id: rosterPlayerId,
+        metadata: eventType === 'score' && goalType ? { goal_type: goalType } : null,
         score_delta_home: Number(scoreDeltaHome) || 0,
         score_delta_away: Number(scoreDeltaAway) || 0,
         clock_seconds: clockSeconds === '' ? 0 : Number(clockSeconds),
@@ -108,7 +118,7 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center bg-slate-950/80 px-4">
-        <ScrollView className="max-h-[90%] w-full max-w-2xl rounded-2xl bg-white" contentContainerClassName="gap-4 p-6">
+        <ScrollView ref={scrollRef} className="max-h-[90%] w-full max-w-2xl rounded-2xl bg-white" contentContainerClassName="gap-4 p-6">
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-black text-ink">{t('matchesAdmin.events')}</Text>
             <Pressable onPress={onClose} className="h-10 w-10 items-center justify-center rounded-full bg-slate-100"><Text className="text-xl font-black text-ink">×</Text></Pressable>
@@ -141,8 +151,11 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
           </View>
 
           {/* Add/Edit form */}
-          <View className="mt-4 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <Text className="font-black text-ink">{editing ? t('matchesAdmin.editEvent') : t('matchesAdmin.addEvent')}</Text>
+          <View ref={formRef} className={`mt-4 gap-3 rounded-2xl border p-4 ${editing ? 'border-brand bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
+            <View className="flex-row items-center justify-between">
+              <Text className="font-black text-ink">{editing ? t('matchesAdmin.editEvent') : t('matchesAdmin.addEvent')}</Text>
+              {editing ? <Pressable onPress={reset} className="rounded-lg bg-slate-200 px-3 py-1"><Text className="text-xs font-black text-ink">{t('common.cancel')}</Text></Pressable> : null}
+            </View>
 
             <View className="flex-row flex-wrap gap-2">
               {EVENT_TYPES.map((type) => (
@@ -177,15 +190,24 @@ export function MatchEventsModal({ match, teams, onClose }: { match: Match; team
             <Field label={t('matchesAdmin.clockSeconds')} value={clockSeconds} onChangeText={setClockSeconds} keyboardType="number-pad" />
 
             {eventType === 'score' ? (
-              <View className="flex-row gap-3">
-                <View className="flex-1"><Field label={t('matches.homeScore')} value={scoreDeltaHome} onChangeText={setScoreDeltaHome} keyboardType="number-pad" /></View>
-                <View className="flex-1"><Field label={t('matches.awayScore')} value={scoreDeltaAway} onChangeText={setScoreDeltaAway} keyboardType="number-pad" /></View>
+              <View className="gap-3">
+                <View className="flex-row gap-3">
+                  <View className="flex-1"><Field label={t('matches.homeScore')} value={scoreDeltaHome} onChangeText={setScoreDeltaHome} keyboardType="number-pad" /></View>
+                  <View className="flex-1"><Field label={t('matches.awayScore')} value={scoreDeltaAway} onChangeText={setScoreDeltaAway} keyboardType="number-pad" /></View>
+                </View>
+                <View className="flex-row flex-wrap gap-2">
+                  {([null, 'penalty', 'own_goal'] as const).map((type) => (
+                    <Pressable key={type ?? 'normal'} onPress={() => setGoalType(type)} className={`rounded-xl px-3 py-2 ${goalType === type ? 'bg-brand' : 'bg-white'}`}>
+                      <Text className={goalType === type ? 'font-bold text-white' : 'font-bold text-ink'}>{type ? t(`events.goalTypes.${type}`) : t('events.goalTypes.normal')}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             ) : null}
 
             <View className="flex-row gap-3">
               <View className="flex-1"><Button label={t('common.cancel')} variant="ghost" onPress={reset} /></View>
-              <View className="flex-1"><Button label={t('common.save')} onPress={() => void save()} loading={saving} /></View>
+              <View className="flex-1"><Button label={editing ? t('common.save') : t('matchesAdmin.addEvent')} onPress={() => void save()} loading={saving} /></View>
             </View>
           </View>
         </ScrollView>

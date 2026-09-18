@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EntityShareModal } from '@/components/entity-share-modal';
+import { MobileFAB } from '@/components/mobile-fab';
 import { RosterPlayerModal } from '@/components/roster-player-modal';
 import { RosterUserLinkModal } from '@/components/roster-user-link-modal';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { addTeamShare, createTeamRoster, deleteTeamRoster, linkTeamRosterPlayer,
 import { useTeamRosters, useTeams } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 import type { EntityShare, RosterPlayer, UserProfile } from '@/types/database';
-import { initialsFromName, rosterFullName } from '@/types/database';
+import { rosterFullName } from '@/types/database';
 
 export default function TeamDetailScreen() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export default function TeamDetailScreen() {
 
   if (loadingTeams) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas">
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900">
         <ActivityIndicator color="#10B981" />
       </View>
     );
@@ -52,10 +53,10 @@ export default function TeamDetailScreen() {
 
   if (!team) {
     return (
-      <View className="flex-1 items-center justify-center bg-canvas px-5">
-        <View className="w-full max-w-md rounded-2xl bg-white p-7">
-          <Text className="text-3xl font-black text-ink">{t('access.denied')}</Text>
-          <Text className="mt-2 text-muted">{t('access.deniedHint')}</Text>
+      <View className="flex-1 items-center justify-center bg-slate-50 px-5 dark:bg-slate-900">
+        <View className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 dark:border-slate-700 dark:bg-slate-800">
+          <Text className="text-3xl font-black text-slate-900 dark:text-white">{t('access.denied')}</Text>
+          <Text className="mt-2 text-slate-500 dark:text-slate-400">{t('access.deniedHint')}</Text>
           <View className="mt-6">
             <Button label={t('common.back')} variant="ghost" onPress={() => router.back()} />
           </View>
@@ -95,73 +96,73 @@ export default function TeamDetailScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-canvas" contentContainerClassName="items-center px-5 pb-24 pt-10">
-      <View className="w-full max-w-5xl gap-7">
-        <Pressable onPress={() => router.back()}>
+    <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6 safe-bottom overflow-scrolling-touch">
+      <View className="w-full max-w-5xl gap-4">
+        <Pressable onPress={() => router.back()} className="min-h-11 min-w-11 self-start justify-center touch-manipulation">
           <Text className="font-black text-brand">← {t('common.back')}</Text>
         </Pressable>
 
-        <View className="rounded-2xl bg-ink p-7 md:p-10">
-          <View className="flex-row items-center gap-5">
-            <View style={{ backgroundColor: team.color }} className="h-20 w-20 items-center justify-center overflow-hidden rounded-2xl">
-              {team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" resizeMode="cover" /> : <Text className="text-2xl font-black text-white">{initialsFromName(team.name)}</Text>}
+        <View className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 md:p-8">
+          <View className="flex-row items-center gap-4">
+            <View style={{ backgroundColor: team.color }} className="h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">
+              {team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" resizeMode="cover" /> : <Text className="text-2xl">🛡️</Text>}
             </View>
             <View className="flex-1">
               <View className="flex-row flex-wrap items-center gap-3">
-                <Text className="text-4xl font-black text-white">{team.name}</Text>
+                <Text className="text-2xl font-black text-slate-900 dark:text-white">{team.name}</Text>
                 {team.is_private ? (
-                  <View className="rounded-full bg-slate-700 px-3 py-1">
-                    <Text className="text-xs font-black text-slate-300">🔒 {t('teams.privateBadge')}</Text>
+                  <View className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+                    <Text className="text-xs font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
                   </View>
                 ) : null}
               </View>
-              <Text className="mt-2 text-slate-300">{t(`sports.${team.primary_sport}`)} · {initialsFromName(team.name)}</Text>
+              <Text className="text-sm text-slate-500 dark:text-slate-400">{t(`sports.${team.primary_sport}`)}</Text>
             </View>
           </View>
         </View>
 
-        <View className="rounded-2xl border border-slate-200 bg-white p-6">
+        <View className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
           <View className="flex-row flex-wrap items-center justify-between gap-3">
             <View>
-              <Text className="text-2xl font-black text-ink">{t('teams.masterRoster')}</Text>
-              <Text className="text-muted">{t('teams.masterRosterText')}</Text>
+              <Text className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400">{t('teams.masterRosterText')}</Text>
             </View>
             {canManage ? (
-              <View className="flex-row gap-2">
+              <View className="hidden flex-row gap-2 md:flex">
                 <Button label={t('sharing.share')} variant="secondary" onPress={() => setSharing(true)} />
                 <Button label={t('rosters.addPlayer')} onPress={() => setCreating(true)} />
               </View>
             ) : null}
           </View>
 
-          <View className="mt-5">
+          <View className="mt-3">
             <Field label={t('rosters.search')} value={search} onChangeText={setSearch} />
           </View>
 
-          <View className="mt-5 gap-3">
+          <View className="mt-3 gap-2">
             {filtered.map((player) => (
-              <View key={player.id} className="flex-row items-center gap-3 rounded-xl bg-slate-50 p-4">
-                <Text className="w-10 text-center font-mono font-black text-brand">{player.jersey_number ?? '–'}</Text>
-                <View className="flex-1">
-                  <Text className="font-black text-ink">{rosterFullName(player)}{player.is_captain ? ` (${t('rosters.captain')})` : ''}</Text>
-                  {player.position ? <Text className="text-xs text-muted">{player.position}</Text> : null}
+              <View key={player.id} className="flex-row items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+                <Text className="w-10 shrink-0 text-center font-mono text-sm font-black text-brand">{player.jersey_number ?? '–'}</Text>
+                <View className="min-w-0 flex-1">
+                  <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{rosterFullName(player)}{player.is_captain ? ` (${t('rosters.captain')})` : ''}</Text>
+                  {player.position ? <Text className="text-xs text-slate-500 dark:text-slate-400">{player.position}</Text> : null}
                 </View>
                 {canManage ? (
-                  <View className="flex-row gap-2">
-                    <Pressable onPress={() => openLink(player)} className="rounded-lg bg-brand/10 px-3 py-2">
+                  <View className="flex-row gap-1">
+                    <Pressable onPress={() => openLink(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-brand/10 px-3 py-2 touch-manipulation">
                       <Text className="text-xs font-black text-brand">{player.user_id ? t('sharing.unlink') : t('rosters.link')}</Text>
                     </Pressable>
-                    <Pressable onPress={() => setEditing(player)} className="rounded-lg bg-slate-200 px-3 py-2">
-                      <Text className="text-xs font-black text-ink">{t('common.edit')}</Text>
+                    <Pressable onPress={() => setEditing(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-slate-200 px-3 py-2 touch-manipulation dark:bg-slate-700">
+                      <Text className="text-xs font-black text-slate-900 dark:text-white">{t('common.edit')}</Text>
                     </Pressable>
-                    <Pressable onPress={() => void remove(player)} className="rounded-lg bg-red-100 px-3 py-2">
-                      <Text className="text-xs font-black text-red-600">{t('teams.delete')}</Text>
+                    <Pressable onPress={() => void remove(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-red-100 px-3 py-2 touch-manipulation dark:bg-red-900/30">
+                      <Text className="text-xs font-black text-red-600 dark:text-red-400">{t('teams.delete')}</Text>
                     </Pressable>
                   </View>
                 ) : null}
               </View>
             ))}
-            {!filtered.length ? <Text className="py-5 text-center text-muted">{loading ? t('common.loading') : t('teams.emptyRoster')}</Text> : null}
+            {!filtered.length ? <Text className="py-5 text-center text-slate-500 dark:text-slate-400">{loading ? t('common.loading') : t('teams.emptyRoster')}</Text> : null}
           </View>
         </View>
       </View>
@@ -185,6 +186,7 @@ export default function TeamDetailScreen() {
           }}
         />
       ) : null}
+      {canManage ? <MobileFAB label={t('rosters.addPlayer')} onPress={() => setCreating(true)} /> : null}
     </ScrollView>
   );
 }

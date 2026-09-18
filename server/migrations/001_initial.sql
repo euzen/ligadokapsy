@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   favorite_sport TEXT NOT NULL DEFAULT 'football',
+  theme_preference TEXT NOT NULL DEFAULT 'dark' CHECK (theme_preference IN ('system', 'light', 'dark')),
   avatar_url TEXT,
   profile_color TEXT NOT NULL DEFAULT '#10B981',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP

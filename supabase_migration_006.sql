@@ -44,6 +44,9 @@ ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS is_private boolean NOT N
 -- 1b. Add current_period to matches
 ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS current_period integer NOT NULL DEFAULT 0;
 
+-- 1c. Add metadata to match_events
+ALTER TABLE public.match_events ADD COLUMN IF NOT EXISTS metadata jsonb;
+
 -- 2. Ensure rosters_locked on tournaments
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS rosters_locked boolean NOT NULL DEFAULT false;
 
@@ -363,7 +366,7 @@ BEGIN
   ELSIF event_name = 'period_end' THEN
     UPDATE public.matches SET clock_seconds = v_clock, clock_started_at = NULL WHERE id = v_match.id;
   ELSIF event_name = 'period_start' THEN
-    UPDATE public.matches SET status = 'live', clock_started_at = now(), clock_seconds = 0, current_period = coalesce(v_match.current_period, 0) + 1 WHERE id = v_match.id;
+    UPDATE public.matches SET status = 'live', clock_started_at = now(), current_period = coalesce(v_match.current_period, 0) + 1 WHERE id = v_match.id;
   ELSIF event_name = 'match_end' THEN
     UPDATE public.matches SET status = 'finished', clock_seconds = v_clock, clock_started_at = NULL WHERE id = v_match.id;
   ELSIF event_name NOT IN ('yellow_card', 'red_card') THEN

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import type { UserProfile } from '@/types/database';
@@ -14,5 +15,31 @@ export function RosterUserLinkModal({ currentUserId, users, onClose, onSave }: {
   const [saving, setSaving] = useState(false);
   const filtered = useMemo(() => users.filter((user) => fullName(user).toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const save = async () => { setSaving(true); try { await onSave(selected); onClose(); } finally { setSaving(false); } };
-  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View className="flex-1 items-center justify-center bg-slate-950/80 px-4"><ScrollView className="max-h-[90%] w-full max-w-lg rounded-2xl bg-white" contentContainerClassName="gap-5 p-6"><View className="flex-row items-center justify-between"><Text className="text-2xl font-black text-ink">{t('rosters.link')}</Text><Pressable onPress={onClose} className="h-10 w-10 items-center justify-center rounded-full bg-slate-100"><Text className="text-xl font-black text-ink">×</Text></Pressable></View><Field label={t('rosters.searchUser')} value={search} onChangeText={setSearch} placeholder={t('rosters.searchUserPlaceholder')} /><View className="gap-2">{filtered.map((user) => <Pressable key={user.id} onPress={() => setSelected(user.id)} className={`flex-row items-center gap-3 rounded-xl p-4 ${selected === user.id ? 'bg-brand/10 border border-brand' : 'bg-slate-50'}`}><View className="h-10 w-10 items-center justify-center rounded-full bg-slate-200"><Text className="font-black text-ink">{initialsFromName(fullName(user)).slice(0, 1)}</Text></View><View className="flex-1"><Text className="font-black text-ink">{fullName(user)}</Text><Text className="text-xs text-muted">{user.email}</Text></View>{selected === user.id ? <Text className="font-black text-brand">✓</Text> : null}</Pressable>)}</View><Pressable onPress={() => setSelected(null)} className={`rounded-xl border p-4 ${selected === null ? 'border-brand bg-brand/10' : 'border-slate-200 bg-white'}`}><Text className={`font-bold ${selected === null ? 'text-brand' : 'text-ink'}`}>{t('rosters.unlink')}</Text></Pressable><View className="flex-row gap-3"><View className="flex-1"><Button label={t('common.cancel')} variant="ghost" onPress={onClose} /></View><View className="flex-1"><Button label={t('common.save')} onPress={() => void save()} loading={saving} /></View></View></ScrollView></View></Modal>;
+
+  return (
+    <AdaptiveModal visible onClose={onClose} title={t('rosters.link')}>
+      <Field label={t('rosters.searchUser')} value={search} onChangeText={setSearch} placeholder={t('rosters.searchUserPlaceholder')} />
+      <View className="gap-2">
+        {filtered.map((user) => (
+          <Pressable key={user.id} onPress={() => setSelected(user.id)} className={`min-h-11 flex-row items-center gap-3 rounded-xl p-3 touch-manipulation ${selected === user.id ? 'border border-brand bg-brand/10' : 'border border-transparent bg-slate-50 dark:bg-slate-700'}`}>
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-600">
+              <Text className="font-black text-slate-900 dark:text-white">{initialsFromName(fullName(user)).slice(0, 1)}</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-slate-900 dark:text-white">{fullName(user)}</Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400">{user.email}</Text>
+            </View>
+            {selected === user.id ? <Text className="font-black text-brand">✓</Text> : null}
+          </Pressable>
+        ))}
+      </View>
+      <Pressable onPress={() => setSelected(null)} className={`min-h-11 items-center justify-center rounded-xl border p-3 touch-manipulation ${selected === null ? 'border-brand bg-brand/10' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
+        <Text className={`font-bold ${selected === null ? 'text-brand' : 'text-slate-900 dark:text-white'}`}>{t('rosters.unlink')}</Text>
+      </Pressable>
+      <View className="flex-row gap-3">
+        <View className="flex-1"><Button label={t('common.cancel')} variant="ghost" onPress={onClose} /></View>
+        <View className="flex-1"><Button label={t('common.save')} onPress={() => void save()} loading={saving} /></View>
+      </View>
+    </AdaptiveModal>
+  );
 }

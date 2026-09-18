@@ -11,6 +11,7 @@ create table if not exists public.profiles (
   email text not null unique,
   role public.app_role not null default 'user',
   favorite_sport text not null default 'football',
+  theme_preference text not null default 'dark' check (theme_preference in ('system', 'light', 'dark')),
   avatar_url text,
   profile_color text not null default '#10B981' check (profile_color ~ '^#[0-9A-Fa-f]{6}$'),
   language text not null default 'en' check (language in ('cs', 'en')),
@@ -92,9 +93,10 @@ create table if not exists public.match_access_codes (
 create table if not exists public.match_events (
   id uuid primary key default gen_random_uuid(),
   match_id uuid not null references public.matches(id) on delete cascade,
-  event_type text not null check (event_type in ('score', 'yellow_card', 'red_card', 'timer_start', 'timer_pause')),
+  event_type text not null check (event_type in ('score', 'yellow_card', 'red_card', 'timer_start', 'timer_pause', 'period_end', 'period_start', 'match_end')),
   team_id uuid references public.teams(id) on delete set null,
   player_name text,
+  metadata jsonb,
   score_delta_home integer not null default 0,
   score_delta_away integer not null default 0,
   clock_seconds integer not null default 0,
@@ -302,7 +304,7 @@ begin;
   begin
     preferred_language := coalesce(new.raw_user_meta_data->>'language', 'en');
     if preferred_language not in ('cs', 'en') then preferred_language := 'en'; end if;
-    insert into public.profiles (id, first_name, last_name, email, role, favorite_sport, profile_color, language)
+    insert into public.profiles (id, first_name, last_name, email, role, favorite_sport, theme_preference, profile_color, language)
     values (
       new.id,
       coalesce(new.raw_user_meta_data->>'first_name', 'User'),
@@ -310,6 +312,7 @@ begin;
       new.email,
       'user',
       'football',
+      'dark',
       '#10B981',
       preferred_language
     );
@@ -442,14 +445,14 @@ begin;
     elsif event_name = 'period_end' then
       update public.matches set clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
     elsif event_name = 'period_start' then
-      update public.matches set status = 'live', clock_started_at = now(), clock_seconds = 0, current_period = coalesce(v_match.current_period, 0) + 1 where id = v_match.id;
+      update public.matches set status = 'live', clock_started_at = now(), current_period = coalesce(v_match.current_period, 0) + 1 where id = v_match.id;
     elsif event_name = 'match_end' then
       update public.matches set status = 'finished', clock_seconds = v_clock, clock_started_at = null where id = v_match.id;
     elsif event_name not in ('yellow_card', 'red_card') then
       raise exception 'Invalid event type';
     end if;
-    insert into public.match_events (match_id, event_type, team_id, player_name, roster_player_id, score_delta_home, score_delta_away, clock_seconds)
-    values (v_match.id, event_name, target_team, player, roster, v_delta_home, v_delta_away, v_clock);
+    insert into public.match_events (match_id, event_type, team_id, player_name, roster_player_id, metadata, score_delta_home, score_delta_away, clock_seconds)
+    values (v_match.id, event_name, target_team, player, roster, null, v_delta_home, v_delta_away, v_clock);
   end;
   $$;
 

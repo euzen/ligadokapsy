@@ -8,16 +8,19 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigation } from '@/components/app-navigation';
 import { AuthProvider } from '@/providers/auth-provider';
+import { ThemeProvider } from '@/providers/theme-provider';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="light" />
-        <View className="flex-1 bg-canvas">
-          <AppNavigation />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' } }} />
-        </View>
+        <ThemeProvider>
+          <StatusBar style="auto" />
+          <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+            <AppNavigation />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+          </View>
+        </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

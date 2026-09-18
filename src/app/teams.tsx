@@ -1,15 +1,60 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { MobileFAB } from '@/components/mobile-fab';
 import { TeamFormModal } from '@/components/team-form-modal';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
+import { favoriteSports } from '@/features/auth/constants';
 import { createTeam, deleteTeam, updateTeam } from '@/features/auth/local-db';
 import { useTeams } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 import type { Team } from '@/types/database';
-import { initialsFromName } from '@/types/database';
+
+const VISIBILITY_FILTERS = ['all', 'public', 'private'] as const;
+type ViewMode = 'grid' | 'list';
+type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
+
+function TeamAvatar({ team, size = 48 }: { team: Team; size?: number }) {
+  return (
+    <View
+      style={{ backgroundColor: team.color, width: size, height: size }}
+      className="items-center justify-center overflow-hidden rounded-xl"
+    >
+      {team.logo_url ? (
+        <Image source={{ uri: team.logo_url }} className="h-full w-full" resizeMode="cover" />
+      ) : (
+        <Text className="text-xl">🛡️</Text>
+      )}
+    </View>
+  );
+}
+
+function ActionFooter({ team, onEdit }: { team: Team; onEdit: () => void }) {
+  const { t } = useTranslation();
+  const { profile } = useAuth();
+  const remove = (target: Team) =>
+    Alert.alert(t('teams.delete'), t('teams.deleteConfirm', { name: target.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('teams.delete'), style: 'destructive', onPress: () => { if (profile) void deleteTeam(target.id, profile); } },
+    ]);
+
+  return (
+    <View className="mt-auto flex-row gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+      <Pressable onPress={() => router.push(`/teams/${team.id}` as never)} className="min-h-9 flex-1 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
+        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
+      </Pressable>
+      <Pressable onPress={onEdit} className="min-h-9 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('common.edit')}</Text>
+      </Pressable>
+      <Pressable onPress={() => remove(team)} className="min-h-9 flex-1 items-center justify-center rounded-lg bg-red-600">
+        <Text className="text-xs font-bold text-white">{t('teams.delete')}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function TeamsScreen() {
   const { t } = useTranslation();
@@ -17,8 +62,155 @@ export default function TeamsScreen() {
   const { data: teams } = useTeams();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Team | null>(null);
-  const saveNew = async (values: Omit<Team, 'id' | 'created_by'>) => { if (profile) await createTeam(values, profile); };
-  const saveEdit = async (values: Omit<Team, 'id' | 'created_by'>) => { if (profile && editing) await updateTeam(editing.id, values, profile); };
-  const remove = (team: Team) => Alert.alert(t('teams.delete'), t('teams.deleteConfirm', { name: team.name }), [{ text: t('common.cancel'), style: 'cancel' }, { text: t('teams.delete'), style: 'destructive', onPress: () => { if (profile) void deleteTeam(team.id, profile); } }]);
-  return <ScrollView className="flex-1 bg-canvas" contentContainerClassName="items-center px-5 pb-24 pt-10"><View className="w-full max-w-6xl gap-7"><View className="flex-row flex-wrap items-end justify-between gap-4"><View><Text className="text-xs font-black uppercase tracking-widest text-brand">{t('teams.badge')}</Text><Text className="mt-2 text-4xl font-black text-ink">{t('teams.title')}</Text><Text className="mt-2 text-muted">{t('teams.subtitle')}</Text></View>{profile ? <Button label={t('teams.create')} onPress={() => setCreating(true)} /> : <Button label={t('nav.signIn')} onPress={() => router.push('/sign-in')} />}</View><View className="flex-row flex-wrap gap-4">{teams.map((team) => { const canManage = profile?.role === 'admin' || profile?.id === team.created_by; return <View key={team.id} className="min-w-64 flex-1 rounded-2xl border border-slate-200 bg-white p-6"><View className="flex-row items-start justify-between"><View style={{ backgroundColor: team.color }} className="h-14 w-14 items-center justify-center overflow-hidden rounded-xl">{team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" resizeMode="cover" /> : <Text className="font-black text-white">{initialsFromName(team.name)}</Text>}</View><View className="rounded-full bg-slate-100 px-3 py-2"><Text className="text-xs font-black text-muted">{t(`sports.${team.primary_sport}`)}</Text></View></View>{team.is_private ? <View className="mt-3 self-start rounded-full bg-slate-100 px-3 py-1"><Text className="text-xs font-black text-slate-600">🔒 {t('teams.privateBadge')}</Text></View> : null}<Text className="mt-3 text-2xl font-black text-ink">{team.name}</Text><Text className="mt-2 text-xs font-mono text-muted">{team.id}</Text>{canManage ? <View className="mt-5 flex-row gap-2"><Pressable onPress={() => setEditing(team)} className="min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300"><Text className="font-bold text-ink">{t('common.edit')}</Text></Pressable><Pressable onPress={() => router.push(`/teams/${team.id}` as never)} className="min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300"><Text className="font-bold text-ink">{t('teams.masterRoster')}</Text></Pressable><Pressable onPress={() => remove(team)} className="min-h-11 flex-1 items-center justify-center rounded-xl bg-red-50"><Text className="font-bold text-red-600">{t('teams.delete')}</Text></Pressable></View> : null}</View>; })}</View></View>{creating ? <TeamFormModal onClose={() => setCreating(false)} onSave={saveNew} /> : null}{editing ? <TeamFormModal team={editing} onClose={() => setEditing(null)} onSave={saveEdit} /> : null}</ScrollView>;
+  const [view, setView] = useState<ViewMode>('grid');
+  const [search, setSearch] = useState('');
+  const [sportFilter, setSportFilter] = useState<string>('all');
+  const [visibility, setVisibility] = useState<VisibilityFilter>('all');
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return teams.filter((team) => {
+      if (term && !team.name.toLowerCase().includes(term)) return false;
+      if (sportFilter !== 'all' && team.primary_sport !== sportFilter) return false;
+      if (visibility === 'public' && team.is_private) return false;
+      if (visibility === 'private' && !team.is_private) return false;
+      return true;
+    });
+  }, [teams, search, sportFilter, visibility]);
+
+  const saveNew = async (values: Omit<Team, 'id' | 'created_by'>) => {
+    if (profile) await createTeam(values, profile);
+  };
+  const saveEdit = async (values: Omit<Team, 'id' | 'created_by'>) => {
+    if (profile && editing) await updateTeam(editing.id, values, profile);
+  };
+
+  const FilterBar = (
+    <View className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+      <View className="flex-row flex-wrap gap-2">
+        <View className="min-w-[12rem] flex-1">
+          <Field label={t('teams.search')} value={search} onChangeText={setSearch} />
+        </View>
+        <View className="flex-1 min-w-[8rem]">
+          <Text className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-400">{t('teams.sport')}</Text>
+          <View className="flex-row flex-wrap gap-2">
+            <Pressable onPress={() => setSportFilter('all')} className={`rounded-lg px-3 py-2 ${sportFilter === 'all' ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
+              <Text className={`text-xs font-black ${sportFilter === 'all' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t('teams.all')}</Text>
+            </Pressable>
+            {favoriteSports.map((sport) => (
+              <Pressable key={sport} onPress={() => setSportFilter(sport)} className={`rounded-lg px-3 py-2 ${sportFilter === sport ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                <Text className={`text-xs font-black ${sportFilter === sport ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`sports.${sport}`)}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+      <View className="flex-row flex-wrap items-center justify-between gap-2">
+        <View className="flex-row flex-wrap gap-2">
+          {VISIBILITY_FILTERS.map((item) => (
+            <Pressable key={item} onPress={() => setVisibility(item)} className={`rounded-lg px-3 py-2 ${visibility === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
+              <Text className={`text-xs font-black ${visibility === item ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`teams.${item === 'public' ? 'public' : item === 'private' ? 'privateOnly' : 'all'}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View className="flex-row rounded-lg bg-slate-100 p-1 dark:bg-slate-700">
+          {(['grid', 'list'] as ViewMode[]).map((mode) => (
+            <Pressable key={mode} onPress={() => setView(mode)} className={`rounded-md px-3 py-1.5 ${view === mode ? 'bg-white shadow-sm dark:bg-slate-600' : ''}`}>
+              <Text className={`text-xs font-black ${view === mode ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{t(`teams.view.${mode}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6">
+      <View className="w-full max-w-6xl gap-4">
+        <View className="flex-row flex-wrap items-end justify-between gap-4">
+          <View>
+            <Text className="text-xs font-black uppercase tracking-widest text-brand">{t('teams.badge')}</Text>
+            <Text className="mt-1 text-3xl font-black text-slate-900 dark:text-white">{t('teams.title')}</Text>
+          </View>
+          {profile ? (
+            <View className="hidden md:flex">
+              <Button label={t('teams.create')} onPress={() => setCreating(true)} />
+            </View>
+          ) : (
+            <Button label={t('nav.signIn')} onPress={() => router.push('/sign-in')} />
+          )}
+        </View>
+
+        {FilterBar}
+
+        {view === 'grid' ? (
+          <View className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
+            {filtered.map((team) => {
+              const canManage = profile?.role === 'admin' || profile?.id === team.created_by;
+              return (
+                <View key={team.id} className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                  <View>
+                    <View className="flex-row items-start justify-between">
+                      <TeamAvatar team={team} />
+                      <View className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">
+                        <Text className="text-[10px] font-black text-slate-600 dark:text-slate-300">{t(`sports.${team.primary_sport}`)}</Text>
+                      </View>
+                    </View>
+                    {team.is_private ? (
+                      <View className="mt-2 self-start rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">
+                        <Text className="text-[10px] font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
+                      </View>
+                    ) : null}
+                    <Text className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{team.name}</Text>
+                  </View>
+                  {canManage ? <ActionFooter team={team} onEdit={() => setEditing(team)} /> : null}
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View className="gap-2">
+            {filtered.map((team) => {
+              const canManage = profile?.role === 'admin' || profile?.id === team.created_by;
+              return (
+                <View key={team.id} className="flex-row flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+                  <TeamAvatar team={team} size={40} />
+                  <View className="flex-1">
+                    <Text className="font-bold text-slate-900 dark:text-white">{team.name}</Text>
+                    <Text className="text-xs text-slate-500 dark:text-slate-400">{t(`sports.${team.primary_sport}`)} {team.is_private ? `· 🔒 ${t('teams.privateBadge')}` : ''}</Text>
+                  </View>
+                  {canManage ? (
+                    <View className="flex-row gap-2">
+                      <Pressable onPress={() => router.push(`/teams/${team.id}` as never)} className="rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-700">
+                        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
+                      </Pressable>
+                      <Pressable onPress={() => setEditing(team)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
+                        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('common.edit')}</Text>
+                      </Pressable>
+                      <Pressable onPress={() => {
+                        Alert.alert(t('teams.delete'), t('teams.deleteConfirm', { name: team.name }), [
+                          { text: t('common.cancel'), style: 'cancel' },
+                          { text: t('teams.delete'), style: 'destructive', onPress: () => { if (profile) void deleteTeam(team.id, profile); } },
+                        ]);
+                      }} className="rounded-lg bg-red-600 px-3 py-2">
+                        <Text className="text-xs font-bold text-white">{t('teams.delete')}</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {!filtered.length ? (
+          <Text className="rounded-xl border border-dashed border-slate-300 py-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">{t('teams.noTeams')}</Text>
+        ) : null}
+      </View>
+
+      {creating ? <TeamFormModal onClose={() => setCreating(false)} onSave={saveNew} /> : null}
+      {editing ? <TeamFormModal team={editing} onClose={() => setEditing(null)} onSave={saveEdit} /> : null}
+      {profile ? <MobileFAB label={t('teams.create')} onPress={() => setCreating(true)} /> : null}
+    </ScrollView>
+  );
 }

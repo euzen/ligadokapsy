@@ -62,8 +62,8 @@ export default function ScorekeeperScreen() {
       <View className="w-full max-w-md rounded-2xl bg-white p-6">
         <Text className="text-3xl font-black text-ink">{t('scorekeeper.title')}</Text>
         <Text className="mt-2 text-muted">{t('scorekeeper.enter')}</Text>
-        <TextInput value={secret} onChangeText={setSecret} keyboardType="number-pad" className="mt-6 min-h-14 rounded-xl border border-slate-300 px-4 text-center text-2xl font-black text-ink outline-none" placeholder="123456" />
-        <Pressable onPress={() => setActiveSecret(secret.trim())} className="mt-4 min-h-14 items-center justify-center rounded-xl bg-brand">
+        <TextInput value={secret} onChangeText={setSecret} keyboardType="number-pad" inputMode="numeric" className="mt-6 min-h-14 rounded-xl border border-slate-300 px-4 text-center text-2xl font-black text-ink outline-none" placeholder="123456" />
+        <Pressable onPress={() => setActiveSecret(secret.trim())} className="mt-4 min-h-14 min-w-11 items-center justify-center rounded-xl bg-brand touch-manipulation">
           <Text className="font-black text-white">{t('scorekeeper.open')}</Text>
         </Pressable>
         {error ? <Text className="mt-3 font-bold text-red-600">{error}</Text> : null}
@@ -74,11 +74,13 @@ export default function ScorekeeperScreen() {
   const isRunning = Boolean(bundle.match.clock_started_at);
   const isFinished = bundle.match.status === 'finished';
   const currentPeriod = bundle.match.current_period ?? 0;
+  const lastEvent = bundle.events.length > 0 ? bundle.events[bundle.events.length - 1] : null;
+  const periodEnded = lastEvent?.event_type === 'period_end';
   const running = isRunning ? Math.max(0, Math.floor((now - new Date(bundle.match.clock_started_at!).getTime()) / 1000)) : 0;
   const elapsed = bundle.match.clock_seconds + running;
 
   return (
-    <ScrollView className="flex-1 bg-ink" contentContainerClassName="items-center px-4 pb-12 pt-6">
+    <ScrollView className="flex-1 bg-ink" contentContainerClassName="items-center px-4 pb-12 pt-6 safe-bottom overflow-scrolling-touch">
       <View className="w-full max-w-xl gap-4">
         <Text className="text-center text-xs font-black uppercase tracking-widest text-emerald-400">{t('scorekeeper.sideline')}</Text>
 
@@ -142,15 +144,22 @@ export default function ScorekeeperScreen() {
             </View>
 
             {/* Period controls — only when clock is paused and a period is active */}
-            {!isRunning && currentPeriod > 0 ? (
+            {!isRunning && currentPeriod > 0 && !periodEnded ? (
               <View className="flex-row gap-3">
-                <Pressable onPress={() => void action('period_end').then(() => action('period_start'))} className="min-h-16 flex-1 items-center justify-center rounded-2xl bg-amber-500">
-                  <Text className="font-black text-white">{t('scorekeeper.nextPeriod', { number: currentPeriod + 1 })}</Text>
+                <Pressable onPress={() => void action('period_end')} className="min-h-16 flex-1 items-center justify-center rounded-2xl bg-amber-500">
+                  <Text className="font-black text-white">{t('scorekeeper.endPeriod')}</Text>
                 </Pressable>
                 <Pressable onPress={() => { setConfirmEnd(true); }} className="min-h-16 flex-1 items-center justify-center rounded-2xl bg-slate-700">
                   <Text className="font-black text-white">{t('scorekeeper.endMatch')}</Text>
                 </Pressable>
               </View>
+            ) : null}
+
+            {/* Next period start — shown when the previous period has ended */}
+            {!isRunning && periodEnded ? (
+              <Pressable onPress={() => void action('period_start')} className="min-h-16 items-center justify-center rounded-2xl bg-emerald-600">
+                <Text className="font-black text-white">{t('scorekeeper.startPeriod', { number: currentPeriod + 1 })}</Text>
+              </Pressable>
             ) : null}
 
             {/* End match confirmation */}

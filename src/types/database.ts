@@ -7,13 +7,14 @@ export type UserProfile = {
   email: string;
   role: AppRole;
   favoriteSport: string;
+  themePreference: 'system' | 'light' | 'dark';
   avatarUrl: string | null;
   profileColor: string;
   createdAt: string;
   language: 'cs' | 'en';
 };
 
-export type EditableProfile = Pick<UserProfile, 'first_name' | 'last_name' | 'email' | 'favoriteSport' | 'avatarUrl' | 'profileColor' | 'language'>;
+export type EditableProfile = Pick<UserProfile, 'first_name' | 'last_name' | 'email' | 'favoriteSport' | 'themePreference' | 'avatarUrl' | 'profileColor' | 'language'>;
 
 export type SportSlug = string;
 export type TournamentStatus = 'draft' | 'published' | 'completed';
@@ -87,6 +88,7 @@ export type Sport = {
   periods_config: string;
 };
 
+export type MatchEventMetadata = { goal_type?: 'penalty' | 'own_goal' };
 export type MatchEvent = {
   id: string;
   match_id: string;
@@ -94,6 +96,7 @@ export type MatchEvent = {
   team_id: string | null;
   roster_player_id: string | null;
   player_name: string | null;
+  metadata: MatchEventMetadata | null;
   score_delta_home: number;
   score_delta_away: number;
   clock_seconds: number;
@@ -101,7 +104,7 @@ export type MatchEvent = {
 };
 
 export type MatchAccess = { pin: string; token: string; expires_at: string };
-export type PublicMatch = { match: Match; homeTeam: Team; awayTeam: Team; events: MatchEvent[]; homeRoster: RosterPlayer[]; awayRoster: RosterPlayer[] };
+export type PublicMatch = { match: Match; homeTeam: Team; awayTeam: Team; events: MatchEvent[]; homeRoster: RosterPlayer[]; awayRoster: RosterPlayer[]; sport: Sport | null };
 
 export type EntityShare = {
   id: string;
