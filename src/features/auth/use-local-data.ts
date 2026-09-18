@@ -30,7 +30,7 @@ export function useSports(includeInactive = false) {
 }
 export function useMatches(tournamentId?: string) {
   const loader = useCallback(() => listMatches(tournamentId), [tournamentId]);
-  return useCollection<Match>(loader, !tournamentId);
+  return useCollection<Match>(loader, tournamentId === '');
 }
 export function useTournamentTeamAssignments(tournamentId: string) {
   const loader = useCallback(() => listTournamentTeamAssignments(tournamentId), [tournamentId]);
