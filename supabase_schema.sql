@@ -510,9 +510,25 @@ begin;
     select * into v_tournament from public.tournaments where id = v_tt.tournament_id;
     if auth.uid() is null or (v_tournament.created_by <> auth.uid() and not public.is_admin()) then raise exception 'Not allowed'; end if;
     if v_tt.rosters_locked then raise exception 'Rosters are locked'; end if;
-    if exists(select 1 from public.tournament_rosters where tournament_team_id = tournament_team_id) then raise exception 'Roster already exists'; end if;
+
     insert into public.tournament_rosters (tournament_team_id, user_id, first_name, last_name, jersey_number, position, is_captain)
-    select tournament_team_id, user_id, first_name, last_name, jersey_number, position, is_captain from public.team_rosters where team_id = v_tt.team_id;
+    select $1, tr.user_id, tr.first_name, tr.last_name, tr.jersey_number, tr.position, tr.is_captain
+    from public.team_rosters tr
+    where tr.team_id = v_tt.team_id
+      and not exists (
+        select 1 from public.tournament_rosters existing
+        where existing.tournament_team_id = $1
+          and (
+            (existing.user_id is not null and existing.user_id = tr.user_id)
+            or (
+              existing.user_id is null
+              and tr.user_id is null
+              and existing.first_name = tr.first_name
+              and existing.last_name = tr.last_name
+              and existing.jersey_number is not distinct from tr.jersey_number
+            )
+          )
+      );
   end;
   $$;
 
