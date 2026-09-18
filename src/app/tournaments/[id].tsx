@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { addTeamToTournament, addTournamentShare, bulkImportTournamentRosters, createMatch, createTeam, createTournamentRoster, deleteMatch, generateMatchAccess, generateRoundRobin, linkRosterPlayer, listLocalUsers, listTournamentShares, removeTeamFromTournament, removeTournamentShare, syncMasterRoster, updateRosterLock, updateTournament, updateTournamentStatus } from '@/features/auth/local-db';
 import { useMatches, useTeams, useTournamentRosters, useTournaments, useTournamentTeamAssignments, useTournamentTeams } from '@/features/auth/use-local-data';
+import { useRealtimeChannel } from '@/hooks/use-realtime';
 import { useAuth } from '@/providers/auth-provider';
 import type { EntityShare, Match, MatchAccess, RosterPlayer, Team, Tournament, TournamentStatus, UserProfile } from '@/types/database';
 import { initialsFromName, rosterFullName } from '@/types/database';
@@ -25,11 +26,12 @@ const badgeClasses = { draft: 'bg-amber-100 text-amber-700', published: 'bg-emer
 
 export default function TournamentDetailScreen() {
   const { t } = useTranslation(); const { id } = useLocalSearchParams<{ id: string }>(); const { profile } = useAuth();
-  const { data: tournaments } = useTournaments(); const { data: allTeams } = useTeams(); const { data: registered } = useTournamentTeams(id); const { data: matches } = useMatches(id);
+  const { data: tournaments } = useTournaments(); const { data: allTeams } = useTeams(); const { data: registered } = useTournamentTeams(id); const { data: matches, refresh: refreshMatches } = useMatches(id);
   const { data: assignments } = useTournamentTeamAssignments(id);
   const [tab, setTab] = useState<'teams' | 'matches' | 'standings' | 'rosters'>('teams'); const [search, setSearch] = useState(''); const [creatingVirtual, setCreatingVirtual] = useState(false); const [editingTournament, setEditingTournament] = useState(false); const [creatingMatch, setCreatingMatch] = useState(false); const [deletingMatch, setDeletingMatch] = useState<Match | null>(null); const [generated, setGenerated] = useState<number | null>(null); const [access, setAccess] = useState<Record<string, MatchAccess>>({});
   const [rosterTeam, setRosterTeam] = useState<Team | null>(null); const [addingPlayer, setAddingPlayer] = useState(false); const [bulkImport, setBulkImport] = useState(false); const [bulkLines, setBulkLines] = useState(''); const [rosterSearch, setRosterSearch] = useState(''); const [users, setUsers] = useState<UserProfile[]>([]); const [linkingPlayer, setLinkingPlayer] = useState<RosterPlayer | null>(null); const [sharing, setSharing] = useState(false); const [shares, setShares] = useState<EntityShare[]>([]);
   const tournament = tournaments.find((item) => item.id === id); const canManage = Boolean(profile && tournament && (profile.role === 'admin' || profile.id === tournament.created_by));
+  useRealtimeChannel(`tournament-${id}-matches`, [{ table: 'matches', filter: `tournament_id=eq.${id}`, onEvent: refreshMatches }]);
   useEffect(() => { if (canManage) void listLocalUsers().then(setUsers); }, [canManage]);
   useEffect(() => { if (sharing && tournament && canManage) { void listLocalUsers().then(setUsers); void listTournamentShares(tournament.id).then(setShares); } }, [sharing, tournament, canManage]);
   const available = useMemo(() => allTeams.filter((team) => !registered.some((item) => item.id === team.id) && team.name.toLowerCase().includes(search.toLowerCase())), [allTeams, registered, search]);

@@ -7,7 +7,7 @@ import 'react-native-url-polyfill/auto';
 
 import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentTeam, UserProfile } from '@/types/database';
 
-export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE === 'supabase';
+export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE !== 'local';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder';
 const nativeStorage = { getItem: (name: string) => SecureStore.getItemAsync(name), setItem: (name: string, value: string) => SecureStore.setItemAsync(name, value), removeItem: (name: string) => SecureStore.deleteItemAsync(name) };

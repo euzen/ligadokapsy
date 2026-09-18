@@ -8,9 +8,13 @@
     "scheme": "ligadokapsy",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "cz.ligadokapsy.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "LigaDoKapsy needs photo library access to upload profile and team logos.",
+        "NSCameraUsageDescription": "LigaDoKapsy needs camera access to take profile and team logo photos."
+      }
     },
     "android": {
       "package": "cz.ligadokapsy.app",
@@ -20,6 +24,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {

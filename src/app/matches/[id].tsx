@@ -5,7 +5,8 @@ import { Image, ScrollView, Text, View } from 'react-native';
 
 import { MatchTimeline } from '@/components/match-timeline';
 import { getPublicMatch } from '@/features/auth/local-db';
-import type { PublicMatch, Team } from '@/types/database';
+import { useRealtimeChannel, useRealtimeStatus } from '@/hooks/use-realtime';
+import type { MatchEvent, PublicMatch, Team } from '@/types/database';
 
 function TeamCard({ team, score }: { team: Team; score: number | null }) {
   return (
@@ -13,7 +14,7 @@ function TeamCard({ team, score }: { team: Team; score: number | null }) {
       <View style={{ backgroundColor: team.color }} className="h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">
         {team.logo_url ? <Image source={{ uri: team.logo_url }} className="h-full w-full" /> : <Text className="text-2xl">🛡️</Text>}
       </View>
-      <Text className="mt-2 text-center text-sm font-bold text-slate-900 dark:text-white">{team.name}</Text>
+      <Text className="mt-2 text-center text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{team.name}</Text>
       <Text className="mt-2 text-6xl font-black text-slate-900 dark:text-white">{score ?? 0}</Text>
     </View>
   );
@@ -23,18 +24,35 @@ function clock(seconds: number) {
   return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
+function ConnectionBadge({ online }: { online: boolean }) {
+  return (
+    <View className="self-center rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
+      <Text className={`text-[10px] font-black uppercase ${online ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+        {online ? '🟢 Živě' : '🟠 Offline'}
+      </Text>
+    </View>
+  );
+}
+
 export default function PublicMatchScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [bundle, setBundle] = useState<PublicMatch | null>(null);
   const [now, setNow] = useState(0);
+  const { online } = useRealtimeStatus();
 
   const refresh = useCallback(() => { void getPublicMatch(id).then(setBundle); }, [id]);
+
   useEffect(() => {
     const timeout = setTimeout(refresh, 0);
     const interval = setInterval(() => { setNow(Date.now()); refresh(); }, 1000);
     return () => { clearTimeout(timeout); clearInterval(interval); };
   }, [refresh]);
+
+  useRealtimeChannel<MatchEvent>(`match-${id}`, [
+    { table: 'matches', filter: `id=eq.${id}`, onEvent: refresh },
+    { table: 'match_events', filter: `match_id=eq.${id}`, onEvent: refresh },
+  ]);
 
   if (!bundle) return <View className="flex-1 bg-slate-50 dark:bg-slate-900" />;
 
@@ -42,8 +60,9 @@ export default function PublicMatchScreen() {
   const badge = bundle.match.status === 'live' ? 'bg-red-600 text-white' : bundle.match.status === 'finished' ? 'bg-slate-700 text-white' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400';
 
   return (
-    <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6">
+    <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6 safe-bottom overflow-scrolling-touch">
       <View className="w-full max-w-3xl gap-4">
+        <ConnectionBadge online={online} />
         <View className="items-center">
           <View className={`rounded-full px-3 py-1.5 ${badge.split(' ')[0]}`}>
             <Text className={`text-[10px] font-black uppercase ${badge.split(' ')[1]}`}>{t(`matches.status.${bundle.match.status}`)}</Text>
