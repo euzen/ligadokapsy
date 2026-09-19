@@ -10,6 +10,9 @@ import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchA
 export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE !== 'local';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder';
+if (url.includes('placeholder.supabase.co')) {
+  throw new Error('EXPO_PUBLIC_SUPABASE_URL is not set. Create a .env file with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, then rebuild the native app or clear Metro cache with npx expo start --clear.');
+}
 const nativeStorage = { getItem: (name: string) => SecureStore.getItemAsync(name), setItem: (name: string, value: string) => SecureStore.setItemAsync(name, value), removeItem: (name: string) => SecureStore.deleteItemAsync(name) };
 export const supabase = createClient(url, key, { auth: { ...(Platform.OS === 'web' ? {} : { storage: nativeStorage }), persistSession: true, autoRefreshToken: true, detectSessionInUrl: Platform.OS === 'web' } });
 
