@@ -26,7 +26,8 @@
       },
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -49,12 +50,20 @@
       "expo-secure-store",
       [
         "expo-image-picker",
-        { "photosPermission": "LigaDoKapsy needs photo access to select profile and tournament images." }
+        {
+          "photosPermission": "LigaDoKapsy needs photo access to select profile and tournament images."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7b3c26f2-e98a-4026-9738-be2a8eb34484"
+      }
     }
   }
 }
