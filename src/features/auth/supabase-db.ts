@@ -5,12 +5,12 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
-import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentTeam, UserProfile } from '@/types/database';
+import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, Page, PageCategory, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentTeam, UserProfile } from '@/types/database';
 
 export const isSupabaseMode = process.env.EXPO_PUBLIC_DATA_MODE !== 'local';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder';
-if (url.includes('placeholder.supabase.co')) {
+if ((Platform.OS !== 'web' || typeof window !== 'undefined') && url.includes('placeholder.supabase.co')) {
   throw new Error('EXPO_PUBLIC_SUPABASE_URL is not set. Create a .env file with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, then rebuild the native app or clear Metro cache with npx expo start --clear.');
 }
 const nativeStorage = { getItem: (name: string) => SecureStore.getItemAsync(name), setItem: (name: string, value: string) => SecureStore.setItemAsync(name, value), removeItem: (name: string) => SecureStore.deleteItemAsync(name) };
@@ -103,3 +103,9 @@ export async function sbUpdateMatchEvent(_matchId: string, eventId: string, valu
 export async function sbDeleteMatchEvent(_matchId: string, eventId: string) { const { error } = await supabase.from('match_events').delete().eq('id', eventId); fail(error); }
 export async function sbRecordEvent(secret: string, event: Pick<MatchEvent, 'event_type' | 'team_id' | 'roster_player_id' | 'player_name'>) { const { error } = await supabase.rpc('record_match_event', { secret, event_name: event.event_type, target_team: event.team_id, player: event.player_name, roster: event.roster_player_id }); fail(error); }
 export async function sbUndoEvent(secret: string) { const { error } = await supabase.rpc('undo_match_event', { secret }); fail(error); }
+
+export async function sbListPages(category?: PageCategory) { let query = supabase.from('pages').select('*').eq('is_published', true).order('order_index').order('title'); if (category) query = query.eq('category', category); const { data, error } = await query; fail(error); return (data ?? []) as Page[]; }
+export async function sbGetPage(slug: string) { const { data, error } = await supabase.from('pages').select('*').eq('slug', slug).eq('is_published', true).single(); fail(error); return data as Page; }
+export async function sbCreatePage(values: Omit<Page, 'id' | 'updated_at' | 'created_by'>) { const created_by = await currentUserId(); const { data, error } = await supabase.from('pages').insert({ ...values, created_by }).select().single(); fail(error); return data as Page; }
+export async function sbUpdatePage(id: string, values: Partial<Omit<Page, 'id' | 'updated_at' | 'created_by'>>) { const { data, error } = await supabase.from('pages').update({ ...values, updated_at: new Date().toISOString() }).eq('id', id).select().single(); fail(error); return data as Page; }
+export async function sbDeletePage(id: string) { const { error } = await supabase.from('pages').delete().eq('id', id); fail(error); }

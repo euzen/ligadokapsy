@@ -557,3 +557,31 @@ begin;
   grant execute on function public.sync_master_roster(uuid) to authenticated;
   grant execute on function public.user_teams(uuid) to authenticated;
 commit;
+
+-- Pages / CMS / Legal / FAQ
+begin;
+  create table if not exists public.pages (
+    id uuid primary key default gen_random_uuid(),
+    slug text unique not null,
+    title text not null,
+    content text not null default '',
+    category text not null default 'faq' check (category in ('legal', 'faq', 'guide')),
+    is_published boolean not null default false,
+    order_index integer not null default 0,
+    updated_at timestamptz not null default now(),
+    created_by uuid references public.profiles(id) on delete restrict
+  );
+
+  alter publication supabase_realtime add table public.pages;
+
+  create policy if not exists pages_public_read on public.pages for select using (is_published = true);
+  create policy if not exists pages_admin_manage on public.pages for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+  insert into public.pages (slug, title, content, category, is_published, order_index, created_by)
+  values
+    ('terms', 'Obchodní podmínky', '# Obchodní podmínky\n\nToto jsou vzorové obchodní podmínky. Upravte je v administraci.', 'legal', true, 0, null),
+    ('privacy', 'Ochrana osobních údajů', '# Ochrana osobních údajů\n\nToto je vzorové zpracování osobních údajů. Upravte je v administraci.', 'legal', true, 1, null),
+    ('cookies', 'Cookies', '# Cookies\n\nTato aplikace používá pouze nezbytné cookies pro zajištění funkcionality. Další kategorie cookies vyžadují váš souhlas.', 'legal', true, 2, null),
+    ('faq', 'FAQ / Nápověda', '# Často kladené otázky\n\n- Jak zapsat gól? Použijte scorekeeper rozhraní.\n- Jak vytvořit tým? Jděte do sekce Týmy.', 'faq', true, 0, null)
+  on conflict (slug) do update set title = excluded.title, content = excluded.content, category = excluded.category, is_published = excluded.is_published, order_index = excluded.order_index;
+commit;

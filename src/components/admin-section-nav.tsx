@@ -10,11 +10,12 @@ const items = [
   { key: 'teams', href: '/admin/teams', mark: 'T' },
   { key: 'sports', href: '/admin/sports', mark: 'S' },
   { key: 'matches', href: '/admin/matches', mark: 'M' },
+  { key: 'pages', href: '/admin/pages', mark: 'P' },
 ] as const;
 
-export function AdminSectionNav({ active }: { active: 'sports' | 'matches' }) {
+export function AdminSectionNav({ active }: { active: 'sports' | 'matches' | 'pages' }) {
   const { t } = useTranslation(); const pathname = usePathname(); const [collapsed, setCollapsed] = useState(false);
-  const selected = (key: string) => key === active || (key === 'sports' && pathname === '/admin/sports') || (key === 'matches' && pathname === '/admin/matches');
+  const selected = (key: string) => key === active || (key === 'sports' && pathname === '/admin/sports') || (key === 'matches' && pathname === '/admin/matches') || (key === 'pages' && pathname === '/admin/pages');
   const links = items.map((item) => (
     <Pressable key={item.key} onPress={() => router.push(item.href as never)} className={`rounded-xl p-4 ${selected(item.key) ? 'bg-brand' : ''}`}>
       <Text className={`font-black ${selected(item.key) ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>{collapsed ? item.mark : t(`admin.tabs.${item.key}`)}</Text>

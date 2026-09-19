@@ -7,6 +7,8 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigation } from '@/components/app-navigation';
+import { CookieConsent } from '@/components/cookie-consent';
+import { Footer } from '@/components/footer';
 import { AuthProvider } from '@/providers/auth-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 
@@ -18,7 +20,11 @@ export default function RootLayout() {
           <StatusBar style="auto" />
           <View className="flex-1 bg-slate-50 dark:bg-slate-900">
             <AppNavigation />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+            <View className="flex-1">
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+            </View>
+            <Footer />
+            <CookieConsent />
           </View>
         </ThemeProvider>
       </AuthProvider>

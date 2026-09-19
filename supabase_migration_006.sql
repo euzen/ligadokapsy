@@ -489,3 +489,37 @@ GRANT EXECUTE ON FUNCTION public.can_read_team(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_read_team(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.can_read_tournament(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_read_tournament(uuid) TO anon;
+
+-- 22. Pages / CMS / Legal / FAQ
+CREATE TABLE IF NOT EXISTS public.pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text UNIQUE NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL DEFAULT '',
+  category text NOT NULL DEFAULT 'faq' CHECK (category IN ('legal', 'faq', 'guide')),
+  is_published boolean NOT NULL DEFAULT false,
+  order_index integer NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid REFERENCES public.profiles(id) ON DELETE RESTRICT
+);
+
+ALTER TABLE public.pages FORCE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.pages;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DROP POLICY IF EXISTS pages_public_read ON public.pages;
+CREATE POLICY pages_public_read ON public.pages FOR SELECT USING (is_published = true);
+
+DROP POLICY IF EXISTS pages_admin_manage ON public.pages;
+CREATE POLICY pages_admin_manage ON public.pages FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+INSERT INTO public.pages (slug, title, content, category, is_published, order_index, created_by)
+VALUES
+  ('terms', 'Obchodní podmínky', '# Obchodní podmínky\n\nToto jsou vzorové obchodní podmínky. Upravte je v administraci.', 'legal', true, 0, null),
+  ('privacy', 'Ochrana osobních údajů', '# Ochrana osobních údajů\n\nToto je vzorové zpracování osobních údajů. Upravte je v administraci.', 'legal', true, 1, null),
+  ('cookies', 'Cookies', '# Cookies\n\nTato aplikace používá pouze nezbytné cookies pro zajištění funkcionality. Další kategorie cookies vyžadují váš souhlas.', 'legal', true, 2, null),
+  ('faq', 'FAQ / Nápověda', '# Často kladené otázky\n\n- Jak zapsat gól? Použijte scorekeeper rozhraní.\n- Jak vytvořit tým? Jděte do sekce Týmy.', 'faq', true, 0, null)
+ON CONFLICT (slug) DO UPDATE SET title = excluded.title, content = excluded.content, category = excluded.category, is_published = excluded.is_published, order_index = excluded.order_index;

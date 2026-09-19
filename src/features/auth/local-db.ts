@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import * as sb from '@/features/auth/supabase-db';
-import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentStatus, TournamentTeam, UserProfile } from '@/types/database';
+import type { AdminMetrics, AppRole, EditableProfile, EntityShare, Match, MatchAccess, MatchEvent, Page, PageCategory, PlayerStats, PublicMatch, RosterPlayer, Sport, Team, Tournament, TournamentStatus, TournamentTeam, UserProfile } from '@/types/database';
 
 const browserHost = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'android' ? 'http://10.0.2.2:3210/api' : `http://${browserHost}:3210/api`);
@@ -104,4 +104,11 @@ export async function updateMatchEvent(matchId: string, eventId: string, values:
 export async function deleteMatchEvent(matchId: string, eventId: string) { if (sb.isSupabaseMode) { await sb.sbDeleteMatchEvent(matchId, eventId); dataListeners.forEach((listener) => listener()); return; } await request(`/matches/${matchId}/events/${eventId}`, { method: 'DELETE' }); dataListeners.forEach((listener) => listener()); }
 export async function recordMatchEvent(secret: string, event: Pick<MatchEvent, 'event_type' | 'team_id' | 'roster_player_id' | 'player_name'>) { if (sb.isSupabaseMode) { await sb.sbRecordEvent(secret, event); dataListeners.forEach((listener) => listener()); return; } await request('/scorekeeper/event', { method: 'POST', body: JSON.stringify({ secret, ...event }) }); dataListeners.forEach((listener) => listener()); }
 export async function undoMatchEvent(secret: string) { if (sb.isSupabaseMode) { await sb.sbUndoEvent(secret); dataListeners.forEach((listener) => listener()); return; } await request('/scorekeeper/undo', { method: 'POST', body: JSON.stringify({ secret }) }); dataListeners.forEach((listener) => listener()); }
+
+export async function listPages(category?: PageCategory) { if (sb.isSupabaseMode) return sb.sbListPages(category); const query = category ? `?category=${encodeURIComponent(category)}` : ''; return request<Page[]>(`/pages${query}`); }
+export async function getPage(slug: string) { if (sb.isSupabaseMode) return sb.sbGetPage(slug); try { return await request<Page>(`/pages/${slug}`); } catch { return null; } }
+export async function createPage(values: Omit<Page, 'id' | 'updated_at' | 'created_by'>, actor: UserProfile) { if (sb.isSupabaseMode) { const result = await sb.sbCreatePage(values); dataListeners.forEach((listener) => listener()); return result; } const result = await request<Page>('/pages', { method: 'POST', body: JSON.stringify(values) }); dataListeners.forEach((listener) => listener()); return result; }
+export async function updatePage(id: string, values: Partial<Omit<Page, 'id' | 'updated_at' | 'created_by'>>, actor: UserProfile) { if (sb.isSupabaseMode) { const result = await sb.sbUpdatePage(id, values); dataListeners.forEach((listener) => listener()); return result; } const result = await request<Page>(`/pages/${id}`, { method: 'PATCH', body: JSON.stringify(values) }); dataListeners.forEach((listener) => listener()); return result; }
+export async function deletePage(id: string, actor: UserProfile) { if (sb.isSupabaseMode) { await sb.sbDeletePage(id); dataListeners.forEach((listener) => listener()); return; } await request(`/pages/${id}`, { method: 'DELETE' }); dataListeners.forEach((listener) => listener()); }
+
 export function subscribeLocalData(listener: () => void) { dataListeners.add(listener); return () => dataListeners.delete(listener); }

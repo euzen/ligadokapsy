@@ -143,6 +143,19 @@ export type AdminMetrics = {
   databaseBytes: number;
 };
 
+export type PageCategory = 'legal' | 'faq' | 'guide';
+export type Page = {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  category: PageCategory;
+  is_published: boolean;
+  order_index: number;
+  updated_at: string;
+  created_by: string | null;
+};
+
 export function fullName(profile: { first_name: string; last_name: string }) {
   return `${profile.first_name} ${profile.last_name}`.trim();
 }

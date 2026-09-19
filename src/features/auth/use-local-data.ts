@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { listMatches, listSports, listTeamRosters, listTeams, listTournamentRosters, listTournaments, listTournamentTeamAssignments, listTournamentTeams, subscribeLocalData } from '@/features/auth/local-db';
-import type { Match, RosterPlayer, Sport, Team, Tournament } from '@/types/database';
+import { listMatches, listPages, listSports, listTeamRosters, listTeams, listTournamentRosters, listTournaments, listTournamentTeamAssignments, listTournamentTeams, subscribeLocalData } from '@/features/auth/local-db';
+import type { Match, Page, PageCategory, RosterPlayer, Sport, Team, Tournament } from '@/types/database';
 
 type TournamentTeam = { id: string; tournament_id: string; team_id: string; rosters_locked: boolean };
 
@@ -31,6 +31,11 @@ export function useSports(includeInactive = false) {
 export function useMatches(tournamentId?: string) {
   const loader = useCallback(() => listMatches(tournamentId), [tournamentId]);
   return useCollection<Match>(loader, tournamentId === '');
+}
+
+export function usePages(category?: PageCategory) {
+  const loader = useCallback(() => listPages(category), [category]);
+  return useCollection<Page>(loader);
 }
 export function useTournamentTeamAssignments(tournamentId: string) {
   const loader = useCallback(() => listTournamentTeamAssignments(tournamentId), [tournamentId]);
