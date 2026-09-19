@@ -36,7 +36,7 @@ type DeleteTarget = { kind: 'user' | 'tournament' | 'team' | 'match'; id: string
 const tabs: AdminTab[] = ['overview', 'users', 'tournaments', 'teams'];
 const matchStatuses: MatchStatus[] = ['scheduled', 'live', 'finished', 'cancelled'];
 
-type NavItemKind = AdminTab | 'sports' | 'matches';
+type NavItemKind = AdminTab | 'sports' | 'matches' | 'pages';
 
 function NavItem({ item, collapsed, active, onPress, label }: { item: NavItemKind; collapsed: boolean; active: boolean; onPress: () => void; label: string }) {
   return (
@@ -152,7 +152,7 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
     collapsed,
     active: tab === item,
     onPress: () => router.push((item === 'overview' ? '/admin' : `/admin/${item}`) as never),
-    label: item === 'sports' ? t('admin.tabs.sports') : item === 'matches' ? t('admin.tabs.matches') : t(`admin.tabs.${item}`),
+    label: item === 'sports' ? t('admin.tabs.sports') : item === 'matches' ? t('admin.tabs.matches') : item === 'pages' ? t('admin.tabs.pages') : t(`admin.tabs.${item}`),
   });
 
   return (
@@ -164,19 +164,20 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
         {tabs.map((item) => <NavItem key={item} {...navItemProps(item)} />)}
         <NavItem {...navItemProps('sports')} />
         <NavItem {...navItemProps('matches')} />
+        <NavItem {...navItemProps('pages')} />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="items-center px-4 pb-24 pt-4 md:px-6">
         <View className="w-full max-w-6xl">
           <View className="mb-4 flex-row gap-2 overflow-hidden md:hidden">
-            {[...tabs, 'sports', 'matches'].map((item) => (
+            {[...tabs, 'sports', 'matches', 'pages'].map((item) => (
               <Pressable
                 key={item}
                 onPress={() => router.push((item === 'overview' ? '/admin' : `/admin/${item}`) as never)}
                 className={`rounded-lg px-3 py-2 ${tab === item ? 'bg-brand' : 'bg-white dark:bg-slate-800'}`}
               >
                 <Text className={`text-xs font-black ${tab === item ? 'text-white' : 'text-slate-900 dark:text-slate-300'}`}>
-                  {item === 'sports' ? t('admin.tabs.sports') : item === 'matches' ? t('admin.tabs.matches') : t(`admin.tabs.${item}`)}
+                  {item === 'sports' ? t('admin.tabs.sports') : item === 'matches' ? t('admin.tabs.matches') : item === 'pages' ? t('admin.tabs.pages') : t(`admin.tabs.${item}`)}
                 </Text>
               </Pressable>
             ))}
