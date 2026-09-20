@@ -26,5 +26,6 @@
   "pagesAdmin": {"title":"Správa stránek","subtitle":"Upravuj právní doložky, FAQ a nápovědu.","create":"+ Nová stránka","edit":"Upravit stránku","slug":"URL identifikátor","titlePlaceholder":"Název stránky","category":"Kategorie","categories":{"legal":"Právní doložky","faq":"FAQ","guide":"Nápověda"},"order":"Pořadí","published":"Publikováno","draft":"Koncept","content":"Obsah (Markdown)","contentPlaceholder":"# Nadpis\n\nObsah stránky…"},
   "docs": {"title":"Dokumentace","subtitle":"Právní doložky, nápověda a často kladené otázky.","navigation":"Obsah","updated":"Aktualizováno","notFound":"Stránka nebyla nalezena.","back":"Zpět na dokumentaci"},
   "bracket": {"title":"Turnajový pavouk","tab":"Pavouk","generate":"Generovat pavouk","seeding":"Nasazení týmů (1 = nejsilnější)","matchDate":"Datum zápasů","pitchLocation":"Hřiště","thirdPlace":"O 3. místo","thirdPlaceHint":"Přidat zápas o bronz mezi poraženými semifinalisty.","needTeams":"Registruj alespoň 2 týmy pro vytvoření pavouka.","empty":"Pavouk zatím není vygenerován.","emptyHint":"Použij tlačítko Generovat pavouk pro vytvoření vyřazovací části.","tbd":"Čeká na výsledek","live":"Živě","finished":"Dohráno","round":"Kolo","roundOf16":"Osmifinále","quarterfinal":"Čtvrtfinále","semifinal":"Semifinále","final":"Finále","advancing":"Postupující","forceAdvance":"Postoupit ručně"},
-  "validation": {"required":"Vyplň povinná pole."}
+  "validation": {"required":"Vyplň povinná pole."},
+  "breadcrumbs": {"backTo":"Zpět na {{name}}","docs":"Dokumentace"}
 }

@@ -26,5 +26,6 @@
   "pagesAdmin": {"title":"Page Management","subtitle":"Manage legal pages, FAQ and help articles.","create":"+ New Page","edit":"Edit Page","slug":"URL slug","titlePlaceholder":"Page title","category":"Category","categories":{"legal":"Legal","faq":"FAQ","guide":"Help"},"order":"Order","published":"Published","draft":"Draft","content":"Content (Markdown)","contentPlaceholder":"# Heading\n\nPage content…"},
   "docs": {"title":"Documentation","subtitle":"Legal pages, help and frequently asked questions.","navigation":"Contents","updated":"Updated","notFound":"Page not found.","back":"Back to docs"},
   "bracket": {"title":"Playoff Bracket","tab":"Bracket","generate":"Generate Bracket","seeding":"Team seeding (1 = strongest)","matchDate":"Match date","pitchLocation":"Pitch / Field","thirdPlace":"3rd Place Match","thirdPlaceHint":"Add a bronze match for losing semifinalists.","needTeams":"Register at least 2 teams to generate a bracket.","empty":"No bracket generated yet.","emptyHint":"Use the \"Generate Bracket\" button to create the playoff tree.","tbd":"TBD","live":"Live","finished":"Finished","round":"Round","roundOf16":"Round of 16","quarterfinal":"Quarterfinals","semifinal":"Semifinals","final":"Final","advancing":"Advancing","forceAdvance":"Force advance"},
-  "validation": {"required":"Please fill in the required fields."}
+  "validation": {"required":"Please fill in the required fields."},
+  "breadcrumbs": {"backTo":"Back to {{name}}","docs":"Documentation"}
 }
