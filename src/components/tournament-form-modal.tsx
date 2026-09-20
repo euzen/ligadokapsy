@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
+import { DatePickerField } from '@/components/date-picker-field';
 import { ImagePickerField } from '@/components/image-picker-field';
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -23,14 +24,18 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
   const [isPrivate, setIsPrivate] = useState(tournament?.is_private ?? false);
   const [status, setStatus] = useState<Tournament['status']>(tournament?.status ?? 'draft');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const save = async () => {
+    setError('');
     setSaving(true);
     try {
       const values: TournamentValues & Partial<Pick<Tournament, 'status'>> = { name: name.trim(), sport, location: location.trim(), start_date: startDate, format, logo_url: logo, is_private: isPrivate };
       if (showStatus) values.status = status;
       await onSave(values);
       onClose();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t('request.failed'));
     } finally {
       setSaving(false);
     }
@@ -50,17 +55,20 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
         </View>
       </View>
       <View className="gap-2">
-        <Text className="text-sm font-bold text-slate-900 dark:text-white">{t('tournaments.format.title')}</Text>
+        <Text className="text-sm font-semibold text-slate-900 dark:text-white">{t('tournaments.format.title')}</Text>
         <View className="flex-row flex-wrap gap-2">
-          {formats.map((item) => (
-            <Pressable key={item} onPress={() => setFormat(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${format === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={format === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`tournaments.format.${item}`)}</Text>
-            </Pressable>
-          ))}
+          {formats.map((item) => {
+            const selected = format === item;
+            return (
+              <Pressable key={item} onPress={() => setFormat(item)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })} className={`min-h-11 items-center justify-center rounded-xl px-5 py-3 ${selected ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                <Text className={selected ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`tournaments.format.${item}`)}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
       <Field label={t('tournaments.location')} value={location} onChangeText={setLocation} />
-      <Field label={t('tournaments.startDate')} value={startDate} onChangeText={setStartDate} inputMode="text" />
+      <DatePickerField label={t('tournaments.startDate')} value={startDate} onChange={setStartDate} />
       <ImagePickerField label={t('tournaments.logo')} value={logo} onChange={setLogo} />
       {showStatus ? (
         <View className="gap-2">
@@ -85,6 +93,7 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
           </Pressable>
         </View>
       </View>
+      {error ? <Text className="font-bold text-red-600 dark:text-red-400">{error}</Text> : null}
       <View className="flex-row gap-3">
         <View className="flex-1"><Button label={t('common.cancel')} variant="ghost" onPress={onClose} /></View>
         <View className="flex-1"><Button label={tournament ? t('common.save') : t('tournaments.create')} loading={saving} onPress={() => void save()} /></View>

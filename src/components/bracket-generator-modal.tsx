@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
+import { DatePickerField } from '@/components/date-picker-field';
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
@@ -73,7 +74,7 @@ export function BracketGeneratorModal({ teams, onClose, onGenerate }: Props) {
           ))}
         </View>
       </ScrollView>
-      <Field label={t('bracket.matchDate')} value={matchDate} onChangeText={setMatchDate} inputMode="text" />
+      <DatePickerField label={t('bracket.matchDate')} value={matchDate} onChange={setMatchDate} />
       <Field label={t('bracket.pitchLocation')} value={pitchLocation} onChangeText={setPitchLocation} />
       <View className="flex-row items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
         <View className="flex-1">
