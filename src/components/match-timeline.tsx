@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
+import { Tooltip } from '@/components/ui/tooltip';
 import type { Match, MatchEvent, Sport } from '@/types/database';
 
 type TimelinePeriod = {
@@ -59,15 +60,18 @@ function GoalRow({ event, match }: { event: EnrichedEvent; match: Match }) {
     : `${event.runningScore.home} - ${event.runningScore.away} ⚽`;
   const player = formatPlayerName(event.player_name);
   const secondary = event.metadata?.goal_type ? `(${t(`events.goalTypes.${event.metadata.goal_type}`)})` : null;
+  const goalTooltip = `${t('events.score')} ${event.clockLabel}${player ? ` — ${player}` : ''}${secondary ? ` ${secondary}` : ''}`;
 
   return (
     <View className={`flex-row items-center py-1 ${isHome ? 'justify-start' : 'justify-end'}`}>
       {isHome ? (
         <>
           <Text className="w-12 shrink-0 text-right font-mono text-xs font-black text-brand">{event.clockLabel}</Text>
-          <View className="mx-2 rounded-lg bg-emerald-100 px-2 py-0.5 dark:bg-emerald-500/20">
-            <Text className="text-xs font-black text-emerald-800 dark:text-emerald-300">{scoreBadge}</Text>
-          </View>
+          <Tooltip text={goalTooltip}>
+            <View className="mx-2 rounded-lg bg-emerald-100 px-2 py-0.5 dark:bg-emerald-500/20">
+              <Text className="text-xs font-black text-emerald-800 dark:text-emerald-300">{scoreBadge}</Text>
+            </View>
+          </Tooltip>
           <View className="min-w-0 flex-1">
             <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{player}</Text>
             {secondary ? <Text className="text-[10px] text-slate-500 dark:text-slate-400">{secondary}</Text> : null}
@@ -79,9 +83,11 @@ function GoalRow({ event, match }: { event: EnrichedEvent; match: Match }) {
             <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{player}</Text>
             {secondary ? <Text className="text-[10px] text-slate-500 dark:text-slate-400">{secondary}</Text> : null}
           </View>
-          <View className="mx-2 rounded-lg bg-emerald-100 px-2 py-0.5 dark:bg-emerald-500/20">
-            <Text className="text-xs font-black text-emerald-800 dark:text-emerald-300">{scoreBadge}</Text>
-          </View>
+          <Tooltip text={goalTooltip}>
+            <View className="mx-2 rounded-lg bg-emerald-100 px-2 py-0.5 dark:bg-emerald-500/20">
+              <Text className="text-xs font-black text-emerald-800 dark:text-emerald-300">{scoreBadge}</Text>
+            </View>
+          </Tooltip>
           <Text className="w-12 shrink-0 font-mono text-xs font-black text-brand">{event.clockLabel}</Text>
         </>
       )}
@@ -90,22 +96,24 @@ function GoalRow({ event, match }: { event: EnrichedEvent; match: Match }) {
 }
 
 function CardRow({ event, match }: { event: EnrichedEvent; match: Match }) {
+  const { t } = useTranslation();
   const isHome = event.team_id === match.home_team_id;
   const player = formatPlayerName(event.player_name);
   const badge = event.event_type === 'yellow_card' ? '🟨' : '🟥';
+  const tooltipText = `${t(`events.${event.event_type}`)} ${event.clockLabel}${player ? ` — ${player}` : ''}`;
 
   return (
     <View className={`flex-row items-center py-1 ${isHome ? 'justify-start' : 'justify-end'}`}>
       {isHome ? (
         <>
           <Text className="w-12 shrink-0 text-right font-mono text-xs font-black text-brand">{event.clockLabel}</Text>
-          <View className="mx-2 rounded px-1.5 py-0.5"><Text className="text-sm">{badge}</Text></View>
+          <Tooltip text={tooltipText}><View className="mx-2 rounded px-1.5 py-0.5"><Text className="text-sm">{badge}</Text></View></Tooltip>
           <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{player}</Text>
         </>
       ) : (
         <>
           <Text className="text-sm font-bold text-slate-900 dark:text-white" numberOfLines={1}>{player}</Text>
-          <View className="mx-2 rounded px-1.5 py-0.5"><Text className="text-sm">{badge}</Text></View>
+          <Tooltip text={tooltipText}><View className="mx-2 rounded px-1.5 py-0.5"><Text className="text-sm">{badge}</Text></View></Tooltip>
           <Text className="w-12 shrink-0 font-mono text-xs font-black text-brand">{event.clockLabel}</Text>
         </>
       )}

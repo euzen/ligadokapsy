@@ -9,6 +9,8 @@ import { RolePicker } from '@/components/role-picker';
 import { TeamFormModal } from '@/components/team-form-modal';
 import { TournamentFormModal } from '@/components/tournament-form-modal';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/ui/export-button';
+import { Tooltip } from '@/components/ui/tooltip';
 import {
     createTeam,
     createTournament,
@@ -200,6 +202,9 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
 
           {tab === 'users' ? (
             <View className="mt-5 gap-2">
+              <View className="flex-row justify-end">
+                <ExportButton filename="users" headers={[t('admin.name'), t('admin.email'), t('admin.role'), t('admin.created')]} rows={users.map((u) => [fullName(u), u.email, u.role, u.createdAt ?? ''])} />
+              </View>
               {users.map((user) => (
                 <View key={user.id} className="flex-row flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
                   <View className="min-w-48 flex-1">
@@ -227,9 +232,11 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
                     <View>
                       <TeamAvatar team={team} />
                       {team.is_private ? (
-                        <View className="mt-2 self-start rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">
-                          <Text className="text-[10px] font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
-                        </View>
+                        <Tooltip text={t('teams.privateHint')}>
+                          <View className="mt-2 self-start rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">
+                            <Text className="text-[10px] font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
+                          </View>
+                        </Tooltip>
                       ) : null}
                       <Text className="mt-2 text-sm font-bold text-slate-900 dark:text-white">{team.name}</Text>
                       <Text className="text-xs text-slate-500 dark:text-slate-400">{t(`sports.${team.primary_sport}`)}</Text>
@@ -258,7 +265,7 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
                     <View className="min-w-48 flex-1">
                       <Text className="text-sm font-bold text-slate-900 dark:text-white">{tournament.name}</Text>
                       <View className="flex-row flex-wrap items-center gap-2">
-                        {tournament.is_private ? <Text className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600 dark:bg-slate-700 dark:text-slate-300">🔒 {t('tournaments.privateBadge')}</Text> : null}
+                        {tournament.is_private ? <Tooltip text={t('tournaments.privateHint')}><Text className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600 dark:bg-slate-700 dark:text-slate-300">🔒 {t('tournaments.privateBadge')}</Text></Tooltip> : null}
                         <Text className="text-xs text-slate-500 dark:text-slate-400">{tournament.location} · {t(`tournaments.status.${tournament.status}`)}</Text>
                       </View>
                     </View>

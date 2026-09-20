@@ -3,12 +3,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { CsvImportModal } from '@/components/csv-import-modal';
 import { EntityShareModal } from '@/components/entity-share-modal';
 import { MobileFAB } from '@/components/mobile-fab';
 import { RosterPlayerModal } from '@/components/roster-player-modal';
 import { RosterUserLinkModal } from '@/components/roster-user-link-modal';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/ui/export-button';
 import { Field } from '@/components/ui/field';
+import { Tooltip } from '@/components/ui/tooltip';
 import { addTeamShare, createTeamRoster, deleteTeamRoster, linkTeamRosterPlayer, listLocalUsers, listTeamShares, removeTeamShare, updateTeamRoster } from '@/features/auth/local-db';
 import { useTeamRosters, useTeams } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
@@ -26,6 +29,7 @@ export default function TeamDetailScreen() {
   const [creating, setCreating] = useState(false);
   const [linking, setLinking] = useState<RosterPlayer | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [csvImport, setCsvImport] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [shares, setShares] = useState<EntityShare[]>([]);
 
@@ -42,6 +46,9 @@ export default function TeamDetailScreen() {
     () => rosters.filter((player) => rosterFullName(player).toLowerCase().includes(search.toLowerCase())),
     [rosters, search]
   );
+
+  const exportHeaders = [t('rosters.firstName'), t('rosters.lastName'), t('rosters.jersey'), t('rosters.position'), t('rosters.captain')];
+  const exportRows = useMemo(() => rosters.map((p) => [p.first_name, p.last_name, p.jersey_number, p.position, p.is_captain ? '1' : '0']), [rosters]);
 
   if (loadingTeams) {
     return (
@@ -95,6 +102,27 @@ export default function TeamDetailScreen() {
     await refresh();
   };
 
+  const csvColumns = [
+    { key: 'first_name', label: t('rosters.firstName'), required: true },
+    { key: 'last_name', label: t('rosters.lastName'), required: true },
+    { key: 'jersey_number', label: t('rosters.jersey'), validate: (v: string) => /^\d*$/.test(v) },
+    { key: 'position', label: t('rosters.position') },
+  ];
+
+  const handleCsvImport = async (rows: Record<string, string>[]) => {
+    if (!profile) return;
+    for (const row of rows) {
+      await createTeamRoster(team.id, {
+        first_name: row.first_name,
+        last_name: row.last_name,
+        jersey_number: row.jersey_number ? Number(row.jersey_number) : null,
+        position: row.position || null,
+        is_captain: false,
+      }, profile);
+    }
+    await refresh();
+  };
+
   return (
     <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6 safe-bottom overflow-scrolling-touch">
       <View className="w-full max-w-5xl gap-4">
@@ -111,9 +139,11 @@ export default function TeamDetailScreen() {
               <View className="flex-row flex-wrap items-center gap-3">
                 <Text className="text-2xl font-black text-slate-900 dark:text-white">{team.name}</Text>
                 {team.is_private ? (
-                  <View className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
-                    <Text className="text-xs font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
-                  </View>
+                  <Tooltip text={t('teams.privateHint')}>
+                    <View className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+                      <Text className="text-xs font-black text-slate-600 dark:text-slate-300">🔒 {t('teams.privateBadge')}</Text>
+                    </View>
+                  </Tooltip>
                 ) : null}
               </View>
               <Text className="text-sm text-slate-500 dark:text-slate-400">{t(`sports.${team.primary_sport}`)}</Text>
@@ -127,12 +157,18 @@ export default function TeamDetailScreen() {
               <Text className="text-xl font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
               <Text className="text-xs text-slate-500 dark:text-slate-400">{t('teams.masterRosterText')}</Text>
             </View>
-            {canManage ? (
-              <View className="hidden flex-row gap-2 md:flex">
-                <Button label={t('sharing.share')} variant="secondary" onPress={() => setSharing(true)} />
-                <Button label={t('rosters.addPlayer')} onPress={() => setCreating(true)} />
-              </View>
-            ) : null}
+            <View className="hidden flex-row flex-wrap gap-2 md:flex">
+              <ExportButton filename={`${team.name}_roster`} headers={exportHeaders} rows={exportRows} />
+              {canManage ? (
+                <>
+                  <Pressable onPress={() => setCsvImport(true)} className="min-h-9 flex-row items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 touch-manipulation dark:border-slate-600 dark:bg-slate-800">
+                    <Text className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('dataTools.importCsv')}</Text>
+                  </Pressable>
+                  <Button label={t('sharing.share')} variant="secondary" onPress={() => setSharing(true)} />
+                  <Button label={t('rosters.addPlayer')} onPress={() => setCreating(true)} />
+                </>
+              ) : null}
+            </View>
           </View>
 
           <View className="mt-3">
@@ -186,6 +222,7 @@ export default function TeamDetailScreen() {
           }}
         />
       ) : null}
+      {csvImport && canManage ? <CsvImportModal title={t('dataTools.importRoster')} columns={csvColumns} templateFilename="roster_template.csv" onImport={handleCsvImport} onClose={() => setCsvImport(false)} /> : null}
       {canManage ? <MobileFAB label={t('rosters.addPlayer')} onPress={() => setCreating(true)} /> : null}
     </ScrollView>
   );
