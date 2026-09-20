@@ -78,7 +78,7 @@ export default function ScorekeeperScreen() {
       await recordMatchEvent(activeSecret, { event_type, team_id, roster_player_id: roster, player_name: roster ? null : t('scorekeeper.unattributed') });
       await refresh();
     } catch (reason) {
-      setError(t(reason instanceof Error ? reason.message : 'scorekeeper.invalid'));
+      setError(reason instanceof Error ? reason.message : t('scorekeeper.invalid'));
       await refresh();
     }
   };

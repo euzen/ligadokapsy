@@ -47,6 +47,14 @@ ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS current_period integer NOT N
 -- 1c. Add metadata to match_events
 ALTER TABLE public.match_events ADD COLUMN IF NOT EXISTS metadata jsonb;
 
+-- 1d. Ensure match_events event_type CHECK includes all event types (period_end, period_start, match_end)
+DO $$ BEGIN
+  ALTER TABLE public.match_events DROP CONSTRAINT IF EXISTS match_events_event_type_check;
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+ALTER TABLE public.match_events ADD CONSTRAINT match_events_event_type_check
+  CHECK (event_type IN ('score', 'yellow_card', 'red_card', 'timer_start', 'timer_pause', 'period_end', 'period_start', 'match_end'));
+
 -- 2. Ensure rosters_locked on tournaments
 ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS rosters_locked boolean NOT NULL DEFAULT false;
 
