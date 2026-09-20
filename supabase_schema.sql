@@ -52,6 +52,7 @@ create table if not exists public.tournaments (
 );
 
 alter table public.tournaments add column if not exists is_private boolean not null default false;
+alter table public.tournaments add column if not exists format text not null default 'league' check (format in ('league', 'playoff', 'hybrid'));
 
 create table if not exists public.tournament_teams (
   id uuid primary key default gen_random_uuid(),
@@ -76,6 +77,11 @@ create table if not exists public.matches (
   clock_seconds integer not null default 0 check (clock_seconds >= 0),
   clock_started_at timestamptz,
   current_period integer not null default 0,
+  round_number integer,
+  bracket_position integer,
+  next_match_id uuid references public.matches(id) on delete set null,
+  next_match_slot text check (next_match_slot is null or next_match_slot in ('home', 'away')),
+  bracket_type text not null default 'winner' check (bracket_type in ('winner', 'loser', 'third_place')),
   created_at timestamptz not null default now(),
   check (home_team_id <> away_team_id)
 );

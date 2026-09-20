@@ -7,8 +7,9 @@ import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { favoriteSports } from '@/features/auth/constants';
-import type { Tournament } from '@/types/database';
+import type { Tournament, TournamentFormat } from '@/types/database';
 
+const formats: TournamentFormat[] = ['league', 'playoff', 'hybrid'];
 type TournamentValues = Omit<Tournament, 'id' | 'created_by' | 'status' | 'rosters_locked'>;
 
 export function TournamentFormModal({ tournament, showStatus, onClose, onSave }: { tournament?: Tournament; showStatus?: boolean; onClose: () => void; onSave: (values: TournamentValues & Partial<Pick<Tournament, 'status'>>) => Promise<void> }) {
@@ -18,6 +19,7 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
   const [location, setLocation] = useState(tournament?.location ?? '');
   const [startDate, setStartDate] = useState(tournament?.start_date ? tournament.start_date.slice(0, 10) : '');
   const [logo, setLogo] = useState<string | null>(tournament?.logo_url ?? null);
+  const [format, setFormat] = useState<TournamentFormat>(tournament?.format ?? 'league');
   const [isPrivate, setIsPrivate] = useState(tournament?.is_private ?? false);
   const [status, setStatus] = useState<Tournament['status']>(tournament?.status ?? 'draft');
   const [saving, setSaving] = useState(false);
@@ -25,7 +27,7 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
   const save = async () => {
     setSaving(true);
     try {
-      const values: TournamentValues & Partial<Pick<Tournament, 'status'>> = { name: name.trim(), sport, location: location.trim(), start_date: startDate, logo_url: logo, is_private: isPrivate };
+      const values: TournamentValues & Partial<Pick<Tournament, 'status'>> = { name: name.trim(), sport, location: location.trim(), start_date: startDate, format, logo_url: logo, is_private: isPrivate };
       if (showStatus) values.status = status;
       await onSave(values);
       onClose();
@@ -43,6 +45,16 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
           {favoriteSports.map((item) => (
             <Pressable key={item} onPress={() => setSport(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${sport === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
               <Text className={sport === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`sports.${item}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <View className="gap-2">
+        <Text className="text-sm font-bold text-slate-900 dark:text-white">{t('tournaments.format.title')}</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {formats.map((item) => (
+            <Pressable key={item} onPress={() => setFormat(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${format === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
+              <Text className={format === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`tournaments.format.${item}`)}</Text>
             </Pressable>
           ))}
         </View>

@@ -523,3 +523,41 @@ VALUES
   ('cookies', 'Cookies', '# Cookies\n\nTato aplikace používá pouze nezbytné cookies pro zajištění funkcionality. Další kategorie cookies vyžadují váš souhlas.', 'legal', true, 2, null),
   ('faq', 'FAQ / Nápověda', '# Často kladené otázky\n\n- Jak zapsat gól? Použijte scorekeeper rozhraní.\n- Jak vytvořit tým? Jděte do sekce Týmy.', 'faq', true, 0, null)
 ON CONFLICT (slug) DO UPDATE SET title = excluded.title, content = excluded.content, category = excluded.category, is_published = excluded.is_published, order_index = excluded.order_index;
+
+-- 23. Playoff bracket support
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS format text NOT NULL DEFAULT 'league';
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    JOIN pg_class ON pg_constraint.conrelid = pg_class.oid
+    WHERE pg_class.relname = 'tournaments' AND pg_constraint.conname = 'tournaments_format_check'
+  ) THEN
+    ALTER TABLE public.tournaments ADD CONSTRAINT tournaments_format_check CHECK (format IN ('league', 'playoff', 'hybrid'));
+  END IF;
+END $$;
+
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS round_number integer;
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS bracket_position integer;
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS next_match_id uuid REFERENCES public.matches(id) ON DELETE SET NULL;
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS next_match_slot text;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    JOIN pg_class ON pg_constraint.conrelid = pg_class.oid
+    WHERE pg_class.relname = 'matches' AND pg_constraint.conname = 'matches_next_match_slot_check'
+  ) THEN
+    ALTER TABLE public.matches ADD CONSTRAINT matches_next_match_slot_check CHECK (next_match_slot IS NULL OR next_match_slot IN ('home', 'away'));
+  END IF;
+END $$;
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS bracket_type text NOT NULL DEFAULT 'winner';
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    JOIN pg_class ON pg_constraint.conrelid = pg_class.oid
+    WHERE pg_class.relname = 'matches' AND pg_constraint.conname = 'matches_bracket_type_check'
+  ) THEN
+    ALTER TABLE public.matches ADD CONSTRAINT matches_bracket_type_check CHECK (bracket_type IN ('winner', 'loser', 'third_place'));
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS matches_bracket_idx ON public.matches(tournament_id, round_number, bracket_position);

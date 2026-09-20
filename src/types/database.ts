@@ -18,6 +18,7 @@ export type EditableProfile = Pick<UserProfile, 'first_name' | 'last_name' | 'em
 
 export type SportSlug = string;
 export type TournamentStatus = 'draft' | 'published' | 'completed';
+export type TournamentFormat = 'league' | 'playoff' | 'hybrid';
 
 export type Team = {
   id: string;
@@ -36,6 +37,7 @@ export type Tournament = {
   location: string;
   start_date: string;
   status: TournamentStatus;
+  format: TournamentFormat;
   logo_url: string | null;
   is_private: boolean;
   created_by: string;
@@ -63,6 +65,7 @@ export type RosterPlayer = {
 };
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'cancelled';
+export type BracketType = 'winner' | 'loser' | 'third_place';
 export type Match = {
   id: string;
   tournament_id: string;
@@ -77,6 +80,11 @@ export type Match = {
   clock_seconds: number;
   clock_started_at: string | null;
   current_period: number;
+  round_number: number | null;
+  bracket_position: number | null;
+  next_match_id: string | null;
+  next_match_slot: 'home' | 'away' | null;
+  bracket_type: BracketType;
 };
 
 export type Sport = {

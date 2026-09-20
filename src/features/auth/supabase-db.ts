@@ -90,7 +90,7 @@ export async function sbUpdateSport(id: string, values: Partial<Omit<Sport, 'id'
 export async function sbDeleteSport(id: string) { const { error } = await supabase.from('sports').delete().eq('id', id); fail(error); }
 
 export async function sbListMatches(tournamentId?: string) { let query = supabase.from('matches').select('*').order('match_date').order('match_time'); if (tournamentId) query = query.eq('tournament_id', tournamentId); const { data, error } = await query; fail(error); return data as Match[]; }
-export async function sbCreateMatch(values: Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at' | 'current_period'>) { const { data, error } = await supabase.from('matches').insert({ ...values, status: 'scheduled' }).select().single(); fail(error); return data as Match; }
+export async function sbCreateMatch(values: Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at' | 'current_period' | 'round_number' | 'bracket_position' | 'next_match_id' | 'next_match_slot' | 'bracket_type'>) { const { data, error } = await supabase.from('matches').insert({ ...values, status: 'scheduled' }).select().single(); fail(error); return data as Match; }
 export async function sbUpdateMatch(id: string, values: Partial<Omit<Match, 'id' | 'tournament_id'>>) { const { data, error } = await supabase.from('matches').update(values).eq('id', id).select().single(); fail(error); return data as Match; }
 export async function sbDeleteMatch(id: string) { const { error } = await supabase.from('matches').delete().eq('id', id); fail(error); }
 export async function sbRoundRobin(tournamentId: string, values: { match_date?: string; pitch_location?: string }) { const teams = await sbTournamentTeams(tournamentId); const existing = await sbListMatches(tournamentId); let created = 0; for (let home = 0; home < teams.length; home++) for (let away = home + 1; away < teams.length; away++) if (!existing.some((match) => new Set([match.home_team_id, match.away_team_id]).has(teams[home].id) && new Set([match.home_team_id, match.away_team_id]).has(teams[away].id))) { await sbCreateMatch({ tournament_id: tournamentId, home_team_id: teams[home].id, away_team_id: teams[away].id, match_date: values.match_date ?? new Date().toISOString().slice(0, 10), match_time: `${String(9 + Math.floor(created / 2)).padStart(2, '0')}:${created % 2 ? '30' : '00'}`, pitch_location: values.pitch_location ?? 'TBD' }); created++; } return { created }; }
@@ -103,6 +103,54 @@ export async function sbUpdateMatchEvent(_matchId: string, eventId: string, valu
 export async function sbDeleteMatchEvent(_matchId: string, eventId: string) { const { error } = await supabase.from('match_events').delete().eq('id', eventId); fail(error); }
 export async function sbRecordEvent(secret: string, event: Pick<MatchEvent, 'event_type' | 'team_id' | 'roster_player_id' | 'player_name'>) { const { error } = await supabase.rpc('record_match_event', { secret, event_name: event.event_type, target_team: event.team_id, player: event.player_name, roster: event.roster_player_id }); fail(error); }
 export async function sbUndoEvent(secret: string) { const { error } = await supabase.rpc('undo_match_event', { secret }); fail(error); }
+
+export async function sbAdvanceWinner(matchId: string) {
+  const { data: match, error } = await supabase.from('matches').select('*').eq('id', matchId).single();
+  fail(error);
+  if (!match || match.status !== 'finished' || !match.next_match_id) return;
+  const homeScore = match.home_score ?? 0;
+  const awayScore = match.away_score ?? 0;
+  if (homeScore === awayScore) return;
+  const winnerId = homeScore > awayScore ? match.home_team_id : match.away_team_id;
+  const slot = match.next_match_slot;
+  if (!slot) return;
+  const update: Record<string, string> = slot === 'home' ? { home_team_id: winnerId } : { away_team_id: winnerId };
+  const { error: updateError } = await supabase.from('matches').update(update).eq('id', match.next_match_id);
+  fail(updateError);
+}
+
+export async function sbGeneratePlayoffBracket(tournamentId: string, bracketMatches: { round_number: number; bracket_position: number; home_team_id: string; away_team_id: string; next_match_slot: 'home' | 'away' | null; bracket_type: 'winner' | 'loser' | 'third_place'; _next_index: number | null }[], matchDate: string, pitchLocation: string) {
+  const PLACEHOLDER = '__BYE__';
+  const createdIds: string[] = [];
+  for (const bm of bracketMatches) {
+    const home = bm.home_team_id === PLACEHOLDER ? null : bm.home_team_id;
+    const away = bm.away_team_id === PLACEHOLDER ? null : bm.away_team_id;
+    const { data, error } = await supabase.from('matches').insert({
+      tournament_id: tournamentId,
+      home_team_id: home ?? '00000000-0000-0000-0000-000000000000',
+      away_team_id: away ?? '00000000-0000-0000-0000-000000000000',
+      match_date: matchDate,
+      match_time: '10:00',
+      pitch_location: pitchLocation || 'TBD',
+      status: 'scheduled',
+      round_number: bm.round_number,
+      bracket_position: bm.bracket_position,
+      bracket_type: bm.bracket_type,
+      next_match_slot: bm.next_match_slot,
+    }).select().single();
+    fail(error);
+    createdIds.push(data.id);
+  }
+  // Link next_match_id pointers
+  for (let i = 0; i < bracketMatches.length; i++) {
+    const nextIdx = bracketMatches[i]._next_index;
+    if (nextIdx !== null && nextIdx < createdIds.length) {
+      const { error } = await supabase.from('matches').update({ next_match_id: createdIds[nextIdx] }).eq('id', createdIds[i]);
+      fail(error);
+    }
+  }
+  return { created: createdIds.length };
+}
 
 export async function sbListPages(category?: PageCategory) { let query = supabase.from('pages').select('*').order('order_index').order('title'); if (category) query = query.eq('category', category); const { data, error } = await query; fail(error); return (data ?? []) as Page[]; }
 export async function sbGetPage(slug: string) { const { data, error } = await supabase.from('pages').select('*').eq('slug', slug).eq('is_published', true).single(); fail(error); return data as Page; }

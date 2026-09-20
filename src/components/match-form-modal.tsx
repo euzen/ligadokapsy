@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import type { Match, Team } from '@/types/database';
 
-type MatchValues = Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at' | 'current_period'>;
+type MatchValues = Omit<Match, 'id' | 'status' | 'home_score' | 'away_score' | 'clock_seconds' | 'clock_started_at' | 'current_period' | 'round_number' | 'bracket_position' | 'next_match_id' | 'next_match_slot' | 'bracket_type'>;
 
 export function MatchFormModal({ tournamentId, teams, onClose, onSave }: { tournamentId: string; teams: Team[]; onClose: () => void; onSave: (values: MatchValues) => Promise<void> }) {
   const { t } = useTranslation();
