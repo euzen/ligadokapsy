@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EditProfileModal } from '@/components/edit-profile-modal';
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { playerStats, userTeams } from '@/features/auth/local-db';
 import { useAuth } from '@/providers/auth-provider';
@@ -120,6 +121,7 @@ export default function ProfileScreen() {
         </View>
       </View>
       {editing ? <EditProfileModal profile={profile} onClose={() => setEditing(false)} onSave={updateProfile} /> : null}
+      <Footer />
     </ScrollView>
   );
 }

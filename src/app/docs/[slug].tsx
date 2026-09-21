@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { getPage, listPages } from '@/features/auth/local-db';
 import type { Page } from '@/types/database';
@@ -65,6 +66,7 @@ export default function DocsPageScreen() {
           </View>
         </View>
       </View>
+      <Footer />
     </ScrollView>
   );
 }

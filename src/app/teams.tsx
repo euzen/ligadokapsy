@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { MobileFAB } from '@/components/mobile-fab';
 import { TeamFormModal } from '@/components/team-form-modal';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,7 @@ export default function TeamsScreen() {
       {creating ? <TeamFormModal onClose={() => setCreating(false)} onSave={saveNew} /> : null}
       {editing ? <TeamFormModal team={editing} onClose={() => setEditing(null)} onSave={saveEdit} /> : null}
       {profile ? <MobileFAB label={t('teams.create')} onPress={() => setCreating(true)} /> : null}
+      <Footer />
     </ScrollView>
   );
 }

@@ -9,7 +9,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigation } from '@/components/app-navigation';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { CookieConsent } from '@/components/cookie-consent';
-import { Footer } from '@/components/footer';
 import { AuthProvider } from '@/providers/auth-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 
@@ -25,7 +24,6 @@ export default function RootLayout() {
             <View className="flex-1">
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
             </View>
-            <Footer />
             <CookieConsent />
           </View>
         </ThemeProvider>

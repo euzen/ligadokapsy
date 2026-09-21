@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'rea
 
 import { CsvImportModal } from '@/components/csv-import-modal';
 import { EntityShareModal } from '@/components/entity-share-modal';
+import { Footer } from '@/components/footer';
 import { MobileFAB } from '@/components/mobile-fab';
 import { RosterPlayerModal } from '@/components/roster-player-modal';
 import { RosterUserLinkModal } from '@/components/roster-user-link-modal';
@@ -224,6 +225,7 @@ export default function TeamDetailScreen() {
       ) : null}
       {csvImport && canManage ? <CsvImportModal title={t('dataTools.importRoster')} columns={csvColumns} templateFilename="roster_template.csv" onImport={handleCsvImport} onClose={() => setCsvImport(false)} /> : null}
       {canManage ? <MobileFAB label={t('rosters.addPlayer')} onPress={() => setCreating(true)} /> : null}
+      <Footer />
     </ScrollView>
   );
 }

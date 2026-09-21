@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { MobileFAB } from '@/components/mobile-fab';
 import { TournamentFormModal } from '@/components/tournament-form-modal';
 import { TournamentLogo } from '@/components/tournament-logo';
@@ -173,6 +174,7 @@ export default function TournamentsScreen() {
       </View>
       {creating ? <TournamentFormModal onClose={() => setCreating(false)} onSave={save} /> : null}
       {profile ? <MobileFAB label={t('tournaments.create')} onPress={() => setCreating(true)} /> : null}
+      <Footer />
     </ScrollView>
   );
 }

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { useMatches, useTeams, useTournaments } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -137,6 +138,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </View>
+      <Footer />
     </ScrollView>
   );
 }

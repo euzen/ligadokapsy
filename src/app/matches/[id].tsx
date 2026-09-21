@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { MatchTimeline } from '@/components/match-timeline';
 import { getPublicMatch } from '@/features/auth/local-db';
 import { useRealtimeChannel, useRealtimeStatus } from '@/hooks/use-realtime';
@@ -82,6 +83,7 @@ export default function PublicMatchScreen() {
           </View>
         </View>
       </View>
+      <Footer />
     </ScrollView>
   );
 }

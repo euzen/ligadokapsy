@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { usePages } from '@/features/auth/use-local-data';
 
 export default function DocsIndexScreen() {
@@ -34,6 +35,7 @@ export default function DocsIndexScreen() {
           ))}
         </View>
       </View>
+      <Footer />
     </ScrollView>
   );
 }

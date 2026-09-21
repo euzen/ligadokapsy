@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { useMatches, useTeams, useTournaments } from '@/features/auth/use-local-data';
@@ -141,6 +142,7 @@ export default function MatchCenterScreen() {
           ) : null}
         </View>
       </View>
+      <Footer />
     </ScrollView>
   );
 }
