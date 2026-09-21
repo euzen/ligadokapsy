@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { useToast } from '@/components/ui/toast-provider';
 import type { EntityShare, UserProfile } from '@/types/database';
 import { fullName } from '@/types/database';
 
@@ -22,8 +23,25 @@ export function EntityShareModal({
   onRemove: (userId: string) => void;
 }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [accessLevel, setAccessLevel] = useState<'view' | 'edit'>('view');
+  const handleAdd = async (userId: string, level: 'view' | 'edit') => {
+    try {
+      await onAdd(userId, level);
+      toast.success(t('toast.shareAdded'));
+    } catch {
+      toast.error(t('toast.shareFailed'));
+    }
+  };
+  const handleRemove = async (userId: string) => {
+    try {
+      await onRemove(userId);
+      toast.info(t('toast.shareRemoved'));
+    } catch {
+      toast.error(t('toast.shareFailed'));
+    }
+  };
   const sharedIds = useMemo(() => new Set(shares.map((s) => s.user_id)), [shares]);
   const filtered = useMemo(
     () =>
@@ -51,7 +69,7 @@ export function EntityShareModal({
 
       <View className="max-h-48 gap-2">
         {filtered.slice(0, 6).map((user) => (
-          <Pressable key={user.id} onPress={() => onAdd(user.id, accessLevel)} className="min-h-11 flex-row items-center justify-between rounded-xl bg-slate-50 p-3 touch-manipulation dark:bg-slate-700">
+          <Pressable key={user.id} onPress={() => void handleAdd(user.id, accessLevel)} className="min-h-11 flex-row items-center justify-between rounded-xl bg-slate-50 p-3 touch-manipulation dark:bg-slate-700">
             <View>
               <Text className="font-bold text-slate-900 dark:text-white">{fullName(user)}</Text>
               <Text className="text-xs text-slate-500 dark:text-slate-400">{user.email}</Text>
@@ -70,7 +88,7 @@ export function EntityShareModal({
               <Text className="font-bold text-slate-900 dark:text-white">{`${share.first_name} ${share.last_name}`.trim()}</Text>
               <Text className="text-xs text-slate-500 dark:text-slate-400">{share.email} · {t(`sharing.${share.access_level}`)}</Text>
             </View>
-            <Pressable onPress={() => onRemove(share.user_id)} className="min-h-11 items-center justify-center rounded-lg bg-red-100 px-3 py-2 touch-manipulation dark:bg-red-900/30">
+            <Pressable onPress={() => void handleRemove(share.user_id)} className="min-h-11 items-center justify-center rounded-lg bg-red-100 px-3 py-2 touch-manipulation dark:bg-red-900/30">
               <Text className="text-xs font-black text-red-600 dark:text-red-400">{t('sharing.remove')}</Text>
             </Pressable>
           </View>

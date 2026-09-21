@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, Text, View } from 'react-native';
 
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { useToast } from '@/components/ui/toast-provider';
 import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
 
@@ -11,6 +12,15 @@ export function AppNavigation() {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
   const { theme, setPreference } = useTheme();
+  const toast = useToast();
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.info(t('toast.signedOut'));
+    } catch {
+      toast.error(t('toast.signOutFailed'));
+    }
+  };
   if (pathname === '/scorekeeper') return null;
   const items = [
     { label: t('nav.home'), path: '/' },
@@ -58,7 +68,7 @@ export function AppNavigation() {
             </Pressable>
           ))}
           {profile ? (
-            <Pressable onPress={() => void signOut()} className="min-h-11 justify-center rounded-xl border border-slate-300 px-3 py-2 touch-manipulation dark:border-slate-600">
+            <Pressable onPress={() => void handleSignOut()} className="min-h-11 justify-center rounded-xl border border-slate-300 px-3 py-2 touch-manipulation dark:border-slate-600">
               <Text className="text-sm font-bold text-slate-900 dark:text-white">{t('nav.signOut')}</Text>
             </Pressable>
           ) : (

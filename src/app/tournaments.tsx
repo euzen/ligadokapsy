@@ -9,6 +9,7 @@ import { TournamentFormModal } from '@/components/tournament-form-modal';
 import { TournamentLogo } from '@/components/tournament-logo';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { useToast } from '@/components/ui/toast-provider';
 import { favoriteSports } from '@/features/auth/constants';
 import { createTournament } from '@/features/auth/local-db';
 import { useTournaments } from '@/features/auth/use-local-data';
@@ -29,6 +30,7 @@ const badgeClasses: Record<Tournament['status'], string> = {
 export default function TournamentsScreen() {
   const { t } = useTranslation();
   const { profile } = useAuth();
+  const toast = useToast();
   const { data: tournaments } = useTournaments();
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('grid');
@@ -50,7 +52,14 @@ export default function TournamentsScreen() {
   }, [tournaments, search, sportFilter, visibility, status]);
 
   const save = async (values: Omit<Tournament, 'id' | 'created_by' | 'status' | 'rosters_locked'>) => {
-    if (profile) await createTournament(values, profile);
+    if (!profile) return;
+    try {
+      await createTournament(values, profile);
+      toast.success(t('toast.tournamentSaved'));
+    } catch (reason) {
+      toast.error(t('toast.saveFailed'), reason instanceof Error ? reason.message : undefined);
+      throw reason;
+    }
   };
 
   const FilterBar = (

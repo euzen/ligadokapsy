@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { useToast } from '@/components/ui/toast-provider';
 import { getScorekeeperMatch, recordMatchEvent, undoMatchEvent } from '@/features/auth/local-db';
 import { useRealtimeStatus } from '@/hooks/use-realtime';
 import type { MatchEvent, PublicMatch, RosterPlayer } from '@/types/database';
@@ -36,6 +37,7 @@ export default function ScorekeeperScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<{ teamId: string; rosterId: string } | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const { online } = useRealtimeStatus();
+  const toast = useToast();
   const optimisticSeq = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -76,16 +78,20 @@ export default function ScorekeeperScreen() {
 
     try {
       await recordMatchEvent(activeSecret, { event_type, team_id, roster_player_id: roster, player_name: roster ? null : t('scorekeeper.unattributed') });
+      if (event_type === 'match_end') toast.success(t('toast.matchEnded'));
+      if (event_type === 'score') toast.success(t('toast.scoreAdded'));
       await refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('scorekeeper.invalid'));
+      const message = reason instanceof Error ? reason.message : t('scorekeeper.invalid');
+      setError(message);
+      toast.error(t('toast.eventFailed'), message);
       await refresh();
     }
   };
 
   const undo = async () => {
     try { await undoMatchEvent(activeSecret); await refresh(); }
-    catch (reason) { setError(t(reason instanceof Error ? reason.message : 'scorekeeper.invalid')); }
+    catch (reason) { const message = reason instanceof Error ? reason.message : t('scorekeeper.invalid'); setError(message); toast.error(t('toast.eventFailed'), message); }
   };
 
   const renderRoster = (teamId: string, roster: RosterPlayer[]) => (

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { useToast } from '@/components/ui/toast-provider';
 import { parseCsv } from '@/utils/csv';
 
 type ColumnDef = {
@@ -26,6 +27,7 @@ type ParsedRow = {
 
 export function CsvImportModal({ title, columns, templateFilename, onImport, onClose }: Props) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [rawText, setRawText] = useState('');
   const [parsed, setParsed] = useState<ParsedRow[] | null>(null);
   const [importing, setImporting] = useState(false);
@@ -81,7 +83,10 @@ export function CsvImportModal({ title, columns, templateFilename, onImport, onC
     setImporting(true);
     try {
       await onImport(valid.map((r) => r.data));
+      toast.success(t('toast.imported', { count: valid.length }));
       onClose();
+    } catch (reason) {
+      toast.error(t('toast.importFailed'), reason instanceof Error ? reason.message : undefined);
     } finally {
       setImporting(false);
     }

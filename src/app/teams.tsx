@@ -8,6 +8,7 @@ import { MobileFAB } from '@/components/mobile-fab';
 import { TeamFormModal } from '@/components/team-form-modal';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { useToast } from '@/components/ui/toast-provider';
 import { favoriteSports } from '@/features/auth/constants';
 import { createTeam, deleteTeam, updateTeam } from '@/features/auth/local-db';
 import { useTeams } from '@/features/auth/use-local-data';
@@ -60,6 +61,7 @@ function ActionFooter({ team, onEdit }: { team: Team; onEdit: () => void }) {
 export default function TeamsScreen() {
   const { t } = useTranslation();
   const { profile } = useAuth();
+  const toast = useToast();
   const { data: teams } = useTeams();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Team | null>(null);
@@ -80,10 +82,24 @@ export default function TeamsScreen() {
   }, [teams, search, sportFilter, visibility]);
 
   const saveNew = async (values: Omit<Team, 'id' | 'created_by'>) => {
-    if (profile) await createTeam(values, profile);
+    if (!profile) return;
+    try {
+      await createTeam(values, profile);
+      toast.success(t('toast.teamSaved'));
+    } catch (reason) {
+      toast.error(t('toast.saveFailed'), reason instanceof Error ? reason.message : undefined);
+      throw reason;
+    }
   };
   const saveEdit = async (values: Omit<Team, 'id' | 'created_by'>) => {
-    if (profile && editing) await updateTeam(editing.id, values, profile);
+    if (!profile || !editing) return;
+    try {
+      await updateTeam(editing.id, values, profile);
+      toast.success(t('toast.teamSaved'));
+    } catch (reason) {
+      toast.error(t('toast.saveFailed'), reason instanceof Error ? reason.message : undefined);
+      throw reason;
+    }
   };
 
   const FilterBar = (

@@ -12,6 +12,7 @@ import { RosterUserLinkModal } from '@/components/roster-user-link-modal';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/ui/export-button';
 import { Field } from '@/components/ui/field';
+import { useToast } from '@/components/ui/toast-provider';
 import { Tooltip } from '@/components/ui/tooltip';
 import { addTeamShare, createTeamRoster, deleteTeamRoster, linkTeamRosterPlayer, listLocalUsers, listTeamShares, removeTeamShare, updateTeamRoster } from '@/features/auth/local-db';
 import { useTeamRosters, useTeams } from '@/features/auth/use-local-data';
@@ -21,6 +22,7 @@ import { rosterFullName } from '@/types/database';
 
 export default function TeamDetailScreen() {
   const { t } = useTranslation();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
   const { data: teams, loading: loadingTeams } = useTeams();
@@ -75,20 +77,30 @@ export default function TeamDetailScreen() {
 
   const save = async (values: Omit<RosterPlayer, 'id' | 'tournament_team_id' | 'team_id' | 'user_id' | 'created_by'>) => {
     if (!profile) return;
-    if (editing) {
-      await updateTeamRoster(editing.id, values, profile);
-      setEditing(null);
-    } else {
-      await createTeamRoster(team.id, values, profile);
-      setCreating(false);
+    try {
+      if (editing) {
+        await updateTeamRoster(editing.id, values, profile);
+        setEditing(null);
+      } else {
+        await createTeamRoster(team.id, values, profile);
+        setCreating(false);
+      }
+      toast.success(t('toast.playerSaved'));
+      await refresh();
+    } catch (reason) {
+      toast.error(t('toast.saveFailed'), reason instanceof Error ? reason.message : undefined);
     }
-    await refresh();
   };
 
   const remove = async (player: RosterPlayer) => {
     if (!profile) return;
-    await deleteTeamRoster(player.id, profile);
-    await refresh();
+    try {
+      await deleteTeamRoster(player.id, profile);
+      toast.info(t('toast.playerRemoved'));
+      await refresh();
+    } catch (reason) {
+      toast.error(t('toast.saveFailed'), reason instanceof Error ? reason.message : undefined);
+    }
   };
 
   const openLink = (player: RosterPlayer) => {
