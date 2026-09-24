@@ -10,6 +10,7 @@ import { playerStats, userTeams } from '@/features/auth/local-db';
 import { useAuth } from '@/providers/auth-provider';
 import type { Team } from '@/types/database';
 import { fullName, initialsFromName } from '@/types/database';
+import { formatDate } from '@/utils/date';
 
 function TeamAvatar({ team, size = 40 }: { team: Team; size?: number }) {
   return (
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
         <View className="grid grid-cols-2 gap-3 sm:grid-cols-4 items-stretch">
           {[
             { label: t('profile.favoriteSport'), value: t(`sports.${profile.favoriteSport}`) },
-            { label: t('profile.memberSince'), value: new Date(profile.createdAt).toLocaleDateString() },
+            { label: t('profile.memberSince'), value: formatDate(profile.createdAt) },
             { label: t('profile.matchesPlayed'), value: stats.matchesPlayed.toString() },
             { label: t('profile.goals'), value: stats.goals.toString() },
           ].map((item) => (

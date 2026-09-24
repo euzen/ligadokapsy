@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { Footer } from '@/components/footer';
 import { useMatches, useTeams, useTournaments } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
+import { formatDate } from '@/utils/date';
 
 const featureOrder = ['scorekeeper', 'rosters', 'standings', 'passport', 'generator'] as const;
 
@@ -94,7 +95,7 @@ export default function HomeScreen() {
                         {tournament.is_private ? <Text className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600 dark:bg-slate-700 dark:text-slate-300">🔒 {t('tournaments.privateBadge')}</Text> : null}
                       </View>
                       <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {t(`sports.${tournament.sport}`)} · {tournament.location} · {new Date(tournament.start_date).toLocaleDateString()}
+                        {t(`sports.${tournament.sport}`)} · {tournament.location} · {formatDate(tournament.start_date)}
                       </Text>
                     </View>
                     <View className={`rounded-full px-3 py-1 ${tournament.status === 'published' ? 'bg-emerald-100 dark:bg-emerald-500/20' : 'bg-slate-100 dark:bg-slate-700'}`}>

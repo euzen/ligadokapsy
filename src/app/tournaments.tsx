@@ -15,6 +15,7 @@ import { createTournament } from '@/features/auth/local-db';
 import { useTournaments } from '@/features/auth/use-local-data';
 import { useAuth } from '@/providers/auth-provider';
 import type { Tournament } from '@/types/database';
+import { formatDate } from '@/utils/date';
 
 const VISIBILITY_FILTERS = ['all', 'public', 'private'] as const;
 const STATUS_FILTERS: (Tournament['status'] | 'all')[] = ['all', 'draft', 'published', 'completed'];
@@ -126,7 +127,7 @@ export default function TournamentsScreen() {
             <Text className="text-[10px] font-black text-slate-600 dark:text-slate-300">🔒 {t('tournaments.privateBadge')}</Text>
           </View>
         ) : null}
-        <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">{tournament.location} · {new Date(tournament.start_date).toLocaleDateString()}</Text>
+        <Text className="mt-2 text-xs text-slate-500 dark:text-slate-400">{tournament.location} · {formatDate(tournament.start_date)}</Text>
       </View>
       <Text className="mt-3 pt-3 text-xs font-black text-brand border-t border-slate-100 dark:border-slate-700">{t('tournaments.open')} →</Text>
     </View>
@@ -166,7 +167,7 @@ export default function TournamentsScreen() {
                 <TournamentLogo value={tournament.logo_url} name={tournament.name} size="small" />
                 <View className="flex-1">
                   <Text className="font-bold text-slate-900 dark:text-white">{tournament.name}</Text>
-                  <Text className="text-xs text-slate-500 dark:text-slate-400">{t(`sports.${tournament.sport}`)} · {tournament.location} · {new Date(tournament.start_date).toLocaleDateString()}</Text>
+                  <Text className="text-xs text-slate-500 dark:text-slate-400">{t(`sports.${tournament.sport}`)} · {tournament.location} · {formatDate(tournament.start_date)}</Text>
                 </View>
                 <View className={`rounded-full px-2 py-0.5 ${badgeClasses[tournament.status].split(' ')[0]}`}>
                   <Text className={`text-[10px] font-black uppercase ${badgeClasses[tournament.status].split(' ')[1]}`}>{t(`tournaments.status.${tournament.status}`)}</Text>

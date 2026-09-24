@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { getPage, listPages } from '@/features/auth/local-db';
 import type { Page } from '@/types/database';
+import { formatDate } from '@/utils/date';
 
 export default function DocsPageScreen() {
   const { t } = useTranslation();
@@ -60,7 +61,7 @@ export default function DocsPageScreen() {
         </View>
         <View className="flex-1 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 md:p-8">
           <Text className="text-3xl font-black text-slate-900 dark:text-white">{page.title}</Text>
-          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('docs.updated')}: {new Date(page.updated_at).toLocaleDateString()}</Text>
+          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('docs.updated')}: {formatDate(page.updated_at)}</Text>
           <View className="mt-5">
             <MarkdownRenderer source={page.content} />
           </View>

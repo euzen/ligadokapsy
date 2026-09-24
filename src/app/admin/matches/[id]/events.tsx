@@ -23,6 +23,7 @@ import { useRealtimeChannel } from '@/hooks/use-realtime';
 import { useAuth } from '@/providers/auth-provider';
 import type { MatchEvent, MatchEventMetadata, RosterPlayer, Team } from '@/types/database';
 import { rosterFullName } from '@/types/database';
+import { formatDate } from '@/utils/date';
 
 type AdminFormKind = 'score' | 'penalty' | 'substitution' | 'yellow_card' | 'red_card';
 type DisplayKind = AdminFormKind | 'timer_start' | 'timer_pause' | 'period_start' | 'period_end' | 'match_end';
@@ -324,7 +325,7 @@ export default function MatchEventsAdminPage() {
               </View>
             </View>
             <Text className="mt-5 text-center text-slate-400">
-              {new Date(match.match_date).toLocaleDateString()} · {match.match_time} · {match.pitch_location}
+              {formatDate(match.match_date)} · {match.match_time} · {match.pitch_location}
             </Text>
           </View>
 
