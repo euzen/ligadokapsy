@@ -96,7 +96,7 @@ export type Sport = {
   periods_config: string;
 };
 
-export type MatchEventMetadata = { goal_type?: 'penalty' | 'own_goal' };
+export type MatchEventMetadata = { goal_type?: 'penalty' | 'own_goal'; note?: string };
 export type MatchEvent = {
   id: string;
   match_id: string;

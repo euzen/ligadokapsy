@@ -16,6 +16,7 @@ export function Breadcrumbs() {
   const { data: teams } = useTeams();
   const [dynamicLabel, setDynamicLabel] = useState<string | null>(null);
   const [parentLabel, setParentLabel] = useState<string | null>(null);
+  const [adminContext, setAdminContext] = useState<{ subLabel: string | null; entityLabel: string | null; leafLabel: string | null }>({ subLabel: null, entityLabel: null, leafLabel: null });
 
   // Base route labels
   const routeLabels: Record<string, string> = useMemo(() => ({
@@ -38,11 +39,38 @@ export function Breadcrumbs() {
     const [section, id] = segments;
     let cancelled = false;
 
+    const adminLabels: Record<string, string> = {
+      users: t('admin.tabs.users'),
+      tournaments: t('admin.tabs.tournaments'),
+      teams: t('admin.tabs.teams'),
+      matches: t('admin.tabs.matches'),
+      sports: t('admin.tabs.sports'),
+      pages: t('admin.tabs.pages'),
+    };
+
     const resolve = async () => {
       let label: string | null = null;
       let parent: string | null = null;
+      const context: { subLabel: string | null; entityLabel: string | null; leafLabel: string | null } = { subLabel: null, entityLabel: null, leafLabel: null };
 
-      if (segments.length >= 2 && id) {
+      if (section === 'admin') {
+        const sub = segments[1] ?? null;
+        const subId = segments[2] ?? null;
+        const leaf = segments[3] ?? null;
+        context.subLabel = sub ? (adminLabels[sub] ?? sub) : null;
+
+        if (sub === 'matches' && subId) {
+          const bundle = await getPublicMatch(subId);
+          if (bundle) {
+            context.entityLabel = `${bundle.homeTeam.name} vs ${bundle.awayTeam.name}`;
+            if (leaf === 'events') {
+              context.leafLabel = `${t('breadcrumbs.events')}: ${context.entityLabel}`;
+              context.entityLabel = null;
+            }
+          }
+        }
+        label = context.leafLabel ?? context.entityLabel ?? context.subLabel ?? id ?? section;
+      } else if (segments.length >= 2 && id) {
         if (section === 'tournaments') {
           const tournament = await getTournament(id);
           if (tournament) label = tournament.name;
@@ -58,22 +86,13 @@ export function Breadcrumbs() {
           }
         } else if (section === 'docs') {
           label = decodeURIComponent(id);
-        } else if (section === 'admin') {
-          const adminLabels: Record<string, string> = {
-            users: t('admin.tabs.users'),
-            tournaments: t('admin.tabs.tournaments'),
-            teams: t('admin.tabs.teams'),
-            matches: t('admin.tabs.matches'),
-            sports: t('admin.tabs.sports'),
-            pages: t('admin.tabs.pages'),
-          };
-          label = adminLabels[id] ?? id;
         }
       }
 
       if (!cancelled) {
         setDynamicLabel(label);
         setParentLabel(parent);
+        setAdminContext(context);
       }
     };
 
@@ -91,6 +110,18 @@ export function Breadcrumbs() {
     // Single-segment routes (e.g., /tournaments, /profile)
     if (!id) return [{ label: baseLabel, path: basePath }];
 
+    // Deep admin routes (e.g., /admin/matches/[id]/events)
+    if (section === 'admin') {
+      const sub = segments[1] ?? null;
+      const subId = segments[2] ?? null;
+      const leaf = segments[3] ?? null;
+      const trail: Crumb[] = [{ label: baseLabel, path: basePath }];
+      if (sub) trail.push({ label: adminContext.subLabel ?? sub, path: `${basePath}/${sub}` });
+      if (subId && adminContext.entityLabel) trail.push({ label: adminContext.entityLabel, path: `${basePath}/${sub}/${subId}` });
+      if (leaf) trail.push({ label: dynamicLabel ?? leaf, path: pathname });
+      return trail;
+    }
+
     // Two-segment routes (e.g., /tournaments/[id], /matches/[id])
     const trail: Crumb[] = [{ label: baseLabel, path: basePath }];
 
@@ -101,7 +132,7 @@ export function Breadcrumbs() {
 
     trail.push({ label: dynamicLabel ?? id, path: `${basePath}/${id}` });
     return trail;
-  }, [segments, routeLabels, dynamicLabel, parentLabel]);
+  }, [segments, routeLabels, dynamicLabel, parentLabel, adminContext, pathname]);
 
   // Update document.title on web
   useEffect(() => {
