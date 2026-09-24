@@ -18,6 +18,7 @@ import { TournamentLogo } from '@/components/tournament-logo';
 import { TvShareButton } from '@/components/tv-share-button';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { useToast } from '@/components/ui/toast-provider';
 import { Tooltip } from '@/components/ui/tooltip';
 import { addTeamToTournament, addTournamentShare, advanceWinner, bulkImportTournamentRosters, createMatch, createTeam, createTournamentRoster, deleteMatch, generateMatchAccess, generatePlayoffBracket, generateRoundRobin, linkRosterPlayer, listLocalUsers, listTournamentShares, removeTeamFromTournament, removeTournamentShare, syncMasterRoster, updateRosterLock, updateTournament, updateTournamentStatus } from '@/features/auth/local-db';
 import { useMatches, useTeams, useTournamentRosters, useTournaments, useTournamentTeamAssignments, useTournamentTeams } from '@/features/auth/use-local-data';
@@ -32,7 +33,7 @@ const statuses: TournamentStatus[] = ['draft', 'published', 'completed'];
 const badgeClasses = { draft: 'bg-amber-100 text-amber-700', published: 'bg-emerald-100 text-emerald-700', completed: 'bg-slate-200 text-slate-600' };
 
 export default function TournamentDetailScreen() {
-  const { t } = useTranslation(); const { id } = useLocalSearchParams<{ id: string }>(); const { profile } = useAuth();
+  const { t } = useTranslation(); const toast = useToast(); const { id } = useLocalSearchParams<{ id: string }>(); const { profile } = useAuth();
   const { data: tournaments } = useTournaments(); const { data: allTeams } = useTeams(); const { data: registered } = useTournamentTeams(id); const { data: matches, refresh: refreshMatches } = useMatches(id);
   const { data: assignments } = useTournamentTeamAssignments(id);
   const [tab, setTab] = useState<'teams' | 'matches' | 'standings' | 'rosters' | 'bracket'>('teams'); const [search, setSearch] = useState(''); const [creatingVirtual, setCreatingVirtual] = useState(false); const [editingTournament, setEditingTournament] = useState(false); const [creatingMatch, setCreatingMatch] = useState(false); const [deletingMatch, setDeletingMatch] = useState<Match | null>(null); const [generated, setGenerated] = useState<number | null>(null); const [access, setAccess] = useState<Record<string, MatchAccess>>({}); const [generatingBracket, setGeneratingBracket] = useState(false);
@@ -57,7 +58,22 @@ export default function TournamentDetailScreen() {
   const rosterLocked = Boolean(selectedAssignmentToShow?.rosters_locked);
   const addRosterPlayer = async (values: Omit<RosterPlayer, 'id' | 'tournament_team_id' | 'user_id'>) => { if (profile && selectedAssignmentToShow) { await createTournamentRoster(selectedAssignmentToShow.id, values, profile); setAddingPlayer(false); } };
   const importBulk = async () => { if (profile && selectedAssignmentToShow) { const lines = bulkLines.split('\n'); await bulkImportTournamentRosters(selectedAssignmentToShow.id, lines, profile); setBulkImport(false); setBulkLines(''); } };
-  const masterSync = async () => { if (profile && selectedAssignmentToShow) { await syncMasterRoster(selectedAssignmentToShow.id, profile); } };
+  const masterSync = async () => {
+    if (!profile || !selectedAssignmentToShow) return;
+    try {
+      const result = await syncMasterRoster(selectedAssignmentToShow.id, profile);
+      const created = (result as { created?: number }).created ?? 0;
+      const updated = (result as { updated?: number }).updated ?? 0;
+      if (created === 0 && updated === 0) {
+        toast.info(t('tournaments.rosterSyncNoChanges'));
+      } else {
+        toast.success(t('tournaments.rosterSyncSuccess', { count: created + updated }));
+      }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : t('tournaments.rosterSyncFailed');
+      toast.error(t('tournaments.rosterSyncFailed'), message);
+    }
+  };
   const toggleLock = async () => { if (profile && selectedAssignmentToShow) { await updateRosterLock(selectedAssignmentToShow.id, !rosterLocked, profile); } };
   const linkPlayer = async (rosterId: string, userId: string | null) => { if (profile && selectedAssignmentToShow) { await linkRosterPlayer(selectedAssignmentToShow.id, rosterId, userId, profile); } };
   const showBracketTab = tournament?.format === 'playoff' || tournament?.format === 'hybrid';
