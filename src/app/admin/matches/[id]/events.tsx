@@ -24,16 +24,22 @@ import { useAuth } from '@/providers/auth-provider';
 import type { MatchEvent, MatchEventMetadata, RosterPlayer, Team } from '@/types/database';
 import { rosterFullName } from '@/types/database';
 
-type AdminEventKind = 'score' | 'penalty' | 'substitution' | 'yellow_card' | 'red_card';
+type AdminFormKind = 'score' | 'penalty' | 'substitution' | 'yellow_card' | 'red_card';
+type DisplayKind = AdminFormKind | 'timer_start' | 'timer_pause' | 'period_start' | 'period_end' | 'match_end';
 
-const EVENT_KINDS: AdminEventKind[] = ['score', 'penalty', 'substitution', 'yellow_card', 'red_card'];
+const EVENT_KINDS: AdminFormKind[] = ['score', 'penalty', 'substitution', 'yellow_card', 'red_card'];
 
-const EVENT_ICONS: Record<AdminEventKind, string> = {
+const EVENT_ICONS: Record<DisplayKind, string> = {
   score: '⚽',
   penalty: '🥅',
   substitution: '🔄',
   yellow_card: '🟨',
   red_card: '🟥',
+  timer_start: '⏱️',
+  timer_pause: '⏸️',
+  period_start: '▶️',
+  period_end: '⏹️',
+  match_end: '🏁',
 };
 
 function initialsFromName(name: string) {
@@ -64,13 +70,23 @@ function teamLogo(team: Team) {
   );
 }
 
-function eventKind(evt: MatchEvent): AdminEventKind {
+function eventKind(evt: MatchEvent): DisplayKind {
   if (evt.event_type === 'score') {
     if (evt.metadata?.goal_type === 'penalty') return 'penalty';
     if (evt.metadata?.note === 'substitution') return 'substitution';
     return 'score';
   }
-  if (evt.event_type === 'yellow_card' || evt.event_type === 'red_card') return evt.event_type;
+  if (
+    evt.event_type === 'yellow_card' ||
+    evt.event_type === 'red_card' ||
+    evt.event_type === 'timer_start' ||
+    evt.event_type === 'timer_pause' ||
+    evt.event_type === 'period_start' ||
+    evt.event_type === 'period_end' ||
+    evt.event_type === 'match_end'
+  ) {
+    return evt.event_type;
+  }
   return 'score';
 }
 
@@ -91,7 +107,7 @@ export default function MatchEventsAdminPage() {
   const [awayRoster, setAwayRoster] = useState<RosterPlayer[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [kind, setKind] = useState<AdminEventKind>('score');
+  const [kind, setKind] = useState<AdminFormKind>('score');
   const [teamId, setTeamId] = useState<string | null>(null);
   const effectiveTeamId = teamId ?? match?.home_team_id ?? null;
   const [rosterPlayerId, setRosterPlayerId] = useState<string | null>(null);
@@ -101,6 +117,13 @@ export default function MatchEventsAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<MatchEvent | null>(null);
+
+  function formKind(evt: MatchEvent): AdminFormKind {
+    const display = eventKind(evt);
+    return display === 'score' || display === 'penalty' || display === 'substitution' || display === 'yellow_card' || display === 'red_card'
+      ? display
+      : 'score';
+  }
 
   const recalcScore = useCallback(async (evts: MatchEvent[]) => {
     if (!match || !profile) return;
@@ -165,7 +188,7 @@ export default function MatchEventsAdminPage() {
 
   const edit = (evt: MatchEvent) => {
     setEditingId(evt.id);
-    setKind(eventKind(evt));
+    setKind(formKind(evt));
     setTeamId(evt.team_id ?? match?.home_team_id ?? null);
     setRosterPlayerId(evt.roster_player_id);
     setPlayerName(evt.player_name ?? '');
