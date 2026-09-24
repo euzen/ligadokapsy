@@ -66,13 +66,61 @@ export async function sbUpdateRosterLock(tournamentTeamId: string, locked: boole
 export async function sbListTeamRosters(teamId: string) { const { data, error } = await supabase.from('team_rosters').select('*').eq('team_id', teamId).order('last_name').order('first_name'); fail(error); return data as RosterPlayer[]; }
 export async function sbCreateTeamRoster(teamId: string, values: Omit<RosterPlayer, 'id' | 'team_id' | 'user_id' | 'created_by'>) { const created_by = await currentUserId(); const { data, error } = await supabase.from('team_rosters').insert({ ...values, team_id: teamId, created_by }).select().single(); fail(error); return data as RosterPlayer; }
 export async function sbUpdateTeamRoster(teamRosterId: string, values: Partial<Omit<RosterPlayer, 'id' | 'team_id' | 'user_id' | 'created_by'>>) { const { data, error } = await supabase.from('team_rosters').update(values).eq('id', teamRosterId).select().single(); fail(error); return data as RosterPlayer; }
-export async function sbLinkTeamRosterPlayer(teamRosterId: string, userId: string | null) { const { error } = await supabase.from('team_rosters').update({ user_id: userId }).eq('id', teamRosterId); fail(error); }
+export async function sbLinkTeamRosterPlayer(teamRosterId: string, userId: string | null) {
+  const { data: row, error: fetchError } = await supabase.from('team_rosters').select('team_id, first_name, last_name, jersey_number').eq('id', teamRosterId).single();
+  fail(fetchError);
+  if (!row) throw new Error('rosters.notFound');
+  const { error: teamError } = await supabase.from('team_rosters').update({ user_id: userId }).eq('id', teamRosterId);
+  fail(teamError);
+  const { data: assignments, error: assignmentError } = await supabase.from('tournament_teams').select('id').eq('team_id', row.team_id);
+  fail(assignmentError);
+  if (!assignments || assignments.length === 0) return;
+  const updates = (assignments as { id: string }[]).map(async (assignment) => {
+    const { data: matches, error: matchError } = await supabase
+      .from('tournament_rosters')
+      .select('id')
+      .eq('tournament_team_id', assignment.id)
+      .eq('first_name', row.first_name)
+      .eq('last_name', row.last_name)
+      .is('user_id', null);
+    if (matchError) throw matchError;
+    const candidates = (matches ?? []).filter((r: any) => (r.jersey_number ?? null) === (row.jersey_number ?? null));
+    if (candidates.length === 1) {
+      const { error: updateError } = await supabase.from('tournament_rosters').update({ user_id: userId }).eq('id', candidates[0].id);
+      fail(updateError);
+    }
+  });
+  await Promise.all(updates);
+}
 export async function sbDeleteTeamRoster(teamRosterId: string) { const { error } = await supabase.from('team_rosters').delete().eq('id', teamRosterId); fail(error); }
 
 export async function sbListTournamentRosters(tournamentTeamId: string) { const { data, error } = await supabase.from('tournament_rosters').select('*').eq('tournament_team_id', tournamentTeamId).order('is_captain', { ascending: false }).order('last_name').order('first_name'); fail(error); return data as RosterPlayer[]; }
 export async function sbCreateTournamentRoster(tournamentTeamId: string, values: Omit<RosterPlayer, 'id' | 'tournament_team_id' | 'user_id'>) { const { data, error } = await supabase.from('tournament_rosters').insert({ ...values, tournament_team_id: tournamentTeamId }).select().single(); fail(error); return data as RosterPlayer; }
 export async function sbBulkImportTournamentRosters(tournamentTeamId: string, lines: string[]) { const inserts = lines.map((line) => parseRosterLine(line, tournamentTeamId)).filter((row) => row.first_name.length > 0); if (!inserts.length) return { created: 0 }; const { data, error } = await supabase.from('tournament_rosters').insert(inserts).select(); fail(error); return { created: (data ?? []).length }; }
-export async function sbSyncMasterRoster(tournamentTeamId: string) { const { error } = await supabase.rpc('sync_master_roster', { tournament_team_id: tournamentTeamId }); fail(error); }
+export async function sbSyncMasterRoster(tournamentTeamId: string) {
+  const { data: tt, error: ttError } = await supabase.from('tournament_teams').select('team_id, rosters_locked').eq('id', tournamentTeamId).single();
+  fail(ttError);
+  if (!tt) throw new Error('tournaments.notFound');
+  if (tt.rosters_locked) throw new Error('rosters.locked');
+  const { data: existing, error: existingError } = await supabase.from('tournament_rosters').select('id').eq('tournament_team_id', tournamentTeamId).limit(1);
+  fail(existingError);
+  if (existing && existing.length > 0) throw new Error('rosters.exists');
+  const { data: master, error: masterError } = await supabase.from('team_rosters').select('*').eq('team_id', tt.team_id).order('last_name').order('first_name');
+  fail(masterError);
+  const rows = (master ?? []).map((row: any) => ({
+    tournament_team_id: tournamentTeamId,
+    user_id: row.user_id ?? null,
+    first_name: row.first_name,
+    last_name: row.last_name,
+    jersey_number: row.jersey_number ?? null,
+    position: row.position ?? null,
+    is_captain: row.is_captain ?? false,
+  }));
+  if (rows.length === 0) return { created: 0 };
+  const { data: inserted, error: insertError } = await supabase.from('tournament_rosters').insert(rows).select();
+  fail(insertError);
+  return { created: inserted?.length ?? 0 };
+}
 export async function sbLinkRosterPlayer(tournamentTeamId: string, rosterId: string, userId: string | null) { const { error } = await supabase.from('tournament_rosters').update({ user_id: userId }).eq('id', rosterId); fail(error); }
 
 export async function sbPlayerStats(userId: string): Promise<PlayerStats> { const { data, error } = await supabase.rpc('player_stats', { target: userId }); fail(error); return data as PlayerStats; }
