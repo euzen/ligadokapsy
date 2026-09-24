@@ -33,9 +33,7 @@ export function RosterUserLinkModal({ currentUserId, users, onClose, onSave }: {
           </Pressable>
         ))}
       </View>
-      <Pressable onPress={() => setSelected(null)} className={`min-h-11 items-center justify-center rounded-xl border p-3 touch-manipulation ${selected === null ? 'border-brand bg-brand/10' : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
-        <Text className={`font-bold ${selected === null ? 'text-brand' : 'text-slate-900 dark:text-white'}`}>{t('rosters.unlink')}</Text>
-      </Pressable>
+      <Button label={t('rosters.unlink')} size="sm" variant={selected === null ? 'primary' : 'ghost'} onPress={() => setSelected(null)} />
       <View className="flex-row gap-3">
         <View className="flex-1"><Button label={t('common.cancel')} variant="ghost" onPress={onClose} /></View>
         <View className="flex-1"><Button label={t('common.save')} onPress={() => void save()} loading={saving} /></View>

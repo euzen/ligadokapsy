@@ -45,15 +45,9 @@ function ActionFooter({ team, onEdit }: { team: Team; onEdit: () => void }) {
 
   return (
     <View className="mt-auto flex-row gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
-      <Pressable onPress={() => router.push(`/teams/${team.id}` as never)} className="min-h-9 flex-1 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
-        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
-      </Pressable>
-      <Pressable onPress={onEdit} className="min-h-9 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
-        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('common.edit')}</Text>
-      </Pressable>
-      <Pressable onPress={() => remove(team)} className="min-h-9 flex-1 items-center justify-center rounded-lg bg-red-600">
-        <Text className="text-xs font-bold text-white">{t('teams.delete')}</Text>
-      </Pressable>
+      <View className="flex-1"><Button label={t('teams.masterRoster')} variant="ghost" size="sm" onPress={() => router.push(`/teams/${team.id}` as never)} /></View>
+      <View className="flex-1"><Button label={t('common.edit')} variant="ghost" size="sm" onPress={onEdit} /></View>
+      <View className="flex-1"><Button label={t('teams.delete')} variant="danger" size="sm" onPress={() => remove(team)} /></View>
     </View>
   );
 }
@@ -115,9 +109,7 @@ export default function TeamsScreen() {
               <Text className={`text-xs font-black ${sportFilter === 'all' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t('teams.all')}</Text>
             </Pressable>
             {favoriteSports.map((sport) => (
-              <Pressable key={sport} onPress={() => setSportFilter(sport)} className={`rounded-lg px-3 py-2 ${sportFilter === sport ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={`text-xs font-black ${sportFilter === sport ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`sports.${sport}`)}</Text>
-              </Pressable>
+              <Button key={sport} label={t(`sports.${sport}`)} size="sm" variant={sportFilter === sport ? 'primary' : 'ghost'} onPress={() => setSportFilter(sport)} />
             ))}
           </View>
         </View>
@@ -125,9 +117,7 @@ export default function TeamsScreen() {
       <View className="flex-row flex-wrap items-center justify-between gap-2">
         <View className="flex-row flex-wrap gap-2">
           {VISIBILITY_FILTERS.map((item) => (
-            <Pressable key={item} onPress={() => setVisibility(item)} className={`rounded-lg px-3 py-2 ${visibility === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={`text-xs font-black ${visibility === item ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`teams.${item === 'public' ? 'public' : item === 'private' ? 'privateOnly' : 'all'}`)}</Text>
-            </Pressable>
+            <Button key={item} label={t(`teams.${item === 'public' ? 'public' : item === 'private' ? 'privateOnly' : 'all'}`)} size="sm" variant={visibility === item ? 'primary' : 'ghost'} onPress={() => setVisibility(item)} />
           ))}
         </View>
         <View className="flex-row rounded-lg bg-slate-100 p-1 dark:bg-slate-700">
@@ -198,20 +188,14 @@ export default function TeamsScreen() {
                   </View>
                   {canManage ? (
                     <View className="flex-row gap-2">
-                      <Pressable onPress={() => router.push(`/teams/${team.id}` as never)} className="rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-700">
-                        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('teams.masterRoster')}</Text>
-                      </Pressable>
-                      <Pressable onPress={() => setEditing(team)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800">
-                        <Text className="text-xs font-bold text-slate-900 dark:text-white">{t('common.edit')}</Text>
-                      </Pressable>
-                      <Pressable onPress={() => {
+                      <Button label={t('teams.masterRoster')} variant="ghost" size="sm" onPress={() => router.push(`/teams/${team.id}` as never)} />
+                      <Button label={t('common.edit')} variant="ghost" size="sm" onPress={() => setEditing(team)} />
+                      <Button label={t('teams.delete')} variant="danger" size="sm" onPress={() => {
                         Alert.alert(t('teams.delete'), t('teams.deleteConfirm', { name: team.name }), [
                           { text: t('common.cancel'), style: 'cancel' },
                           { text: t('teams.delete'), style: 'destructive', onPress: () => { if (profile) void deleteTeam(team.id, profile); } },
                         ]);
-                      }} className="rounded-lg bg-red-600 px-3 py-2">
-                        <Text className="text-xs font-bold text-white">{t('teams.delete')}</Text>
-                      </Pressable>
+                      }} />
                     </View>
                   ) : null}
                 </View>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 
 import { DatePickerField } from '@/components/date-picker-field';
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
@@ -63,12 +63,8 @@ export function BracketGeneratorModal({ teams, onClose, onGenerate }: Props) {
               <View style={{ backgroundColor: team.color }} className="h-7 w-7 rounded-lg" />
               <Text className="flex-1 font-bold text-slate-900 dark:text-white" numberOfLines={1}>{team.name}</Text>
               <View className="flex-row gap-1">
-                <Pressable onPress={() => moveUp(index)} className="min-h-9 min-w-9 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 touch-manipulation">
-                  <Text className="font-black text-slate-900 dark:text-white">↑</Text>
-                </Pressable>
-                <Pressable onPress={() => moveDown(index)} className="min-h-9 min-w-9 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 touch-manipulation">
-                  <Text className="font-black text-slate-900 dark:text-white">↓</Text>
-                </Pressable>
+                <Button label="↑" variant="ghost" size="sm" className="min-w-9 px-0" onPress={() => moveUp(index)} />
+                <Button label="↓" variant="ghost" size="sm" className="min-w-9 px-0" onPress={() => moveDown(index)} />
               </View>
             </View>
           ))}

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Platform, Pressable, Text, View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
+
+
 function useFullscreen() {
   const [active, setActive] = useState(false);
 
@@ -110,12 +113,8 @@ export function TvControls({
               <img src={qrUrl} alt="QR" className="h-full w-full" />
             </View>
             <View className="flex-row gap-3">
-              <Pressable onPress={copyUrl} className="flex-1 items-center justify-center rounded-xl bg-brand py-3">
-                <Text className="font-bold text-white">{copied ? t('tv.copied') : t('tv.copyUrl')}</Text>
-              </Pressable>
-              <Pressable onPress={() => setShowQr(false)} className="items-center justify-center rounded-xl bg-slate-800 px-5 py-3">
-                <Text className="font-bold text-white">{t('common.close')}</Text>
-              </Pressable>
+              <View className="flex-1"><Button label={copied ? t('tv.copied') : t('tv.copyUrl')} onPress={copyUrl} /></View>
+              <Button label={t('common.close')} variant="dark" onPress={() => setShowQr(false)} />
             </View>
           </View>
         </View>

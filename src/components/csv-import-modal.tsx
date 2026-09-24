@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Platform, ScrollView, Text, View } from 'react-native';
 
+
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast-provider';
 import { parseCsv } from '@/utils/csv';
 
@@ -117,21 +119,15 @@ export function CsvImportModal({ title, columns, templateFilename, onImport, onC
         <View className="w-full max-w-2xl rounded-2xl bg-white p-6 dark:bg-slate-900" style={{ maxHeight: '90%' }}>
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-black text-slate-900 dark:text-white">{title}</Text>
-            <Pressable onPress={onClose} className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-              <Text className="text-xl font-black text-slate-900 dark:text-white">×</Text>
-            </Pressable>
+            <Button label="×" variant="ghost" className="h-10 w-10 rounded-full px-0" onPress={onClose} />
           </View>
 
           {!parsed ? (
             <View className="mt-4 gap-3">
               <Text className="text-sm text-slate-500 dark:text-slate-400">{t('dataTools.importHint')}</Text>
               <View className="flex-row gap-2">
-                <Pressable onPress={handleFileSelect} className="rounded-lg bg-brand px-4 py-2">
-                  <Text className="text-sm font-bold text-white">{t('dataTools.selectFile')}</Text>
-                </Pressable>
-                <Pressable onPress={downloadTemplate} className="rounded-lg border border-slate-200 px-4 py-2 dark:border-slate-600">
-                  <Text className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('dataTools.downloadTemplate')}</Text>
-                </Pressable>
+                <Button label={t('dataTools.selectFile')} size="sm" onPress={handleFileSelect} />
+                <Button label={t('dataTools.downloadTemplate')} size="sm" variant="ghost" onPress={downloadTemplate} />
               </View>
               {rawText ? (
                 <View className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
@@ -139,9 +135,7 @@ export function CsvImportModal({ title, columns, templateFilename, onImport, onC
                 </View>
               ) : null}
               {rawText ? (
-                <Pressable onPress={handleParse} className="self-start rounded-lg bg-emerald-600 px-4 py-2">
-                  <Text className="text-sm font-bold text-white">{t('dataTools.parsePreview')}</Text>
-                </Pressable>
+                <Button label={t('dataTools.parsePreview')} size="sm" variant="secondary" onPress={handleParse} />
               ) : null}
             </View>
           ) : (
@@ -179,12 +173,8 @@ export function CsvImportModal({ title, columns, templateFilename, onImport, onC
               </ScrollView>
 
               <View className="flex-row gap-2">
-                <Pressable onPress={() => setParsed(null)} className="rounded-lg border border-slate-200 px-4 py-2 dark:border-slate-600">
-                  <Text className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('common.back')}</Text>
-                </Pressable>
-                <Pressable onPress={() => void handleConfirm()} disabled={validCount === 0 || importing} className={`rounded-lg bg-brand px-4 py-2 ${validCount === 0 || importing ? 'opacity-50' : ''}`}>
-                  <Text className="text-sm font-bold text-white">{importing ? t('common.loading') : t('dataTools.confirmImport', { count: validCount })}</Text>
-                </Pressable>
+                <Button label={t('common.back')} variant="ghost" size="sm" onPress={() => setParsed(null)} />
+                <Button label={importing ? t('common.loading') : t('dataTools.confirmImport', { count: validCount })} size="sm" disabled={validCount === 0 || importing} loading={importing} onPress={() => void handleConfirm()} />
               </View>
             </View>
           )}

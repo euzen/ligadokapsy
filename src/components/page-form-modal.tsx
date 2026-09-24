@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -40,9 +40,7 @@ export function PageFormModal({ page, onClose, onSave }: { page?: Page | null; o
       <Text className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('pagesAdmin.category')}</Text>
       <View className="flex-row flex-wrap gap-2">
         {categories.map((cat) => (
-          <Pressable key={cat} onPress={() => setCategory(cat)} className={`rounded-lg px-3 py-2 ${category === cat ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-            <Text className={`text-xs font-bold ${category === cat ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`pagesAdmin.categories.${cat}`)}</Text>
-          </Pressable>
+          <Button key={cat} label={t(`pagesAdmin.categories.${cat}`)} size="sm" variant={category === cat ? 'primary' : 'ghost'} onPress={() => setCategory(cat)} />
         ))}
       </View>
       <Field label={t('pagesAdmin.order')} value={orderIndex} onChangeText={setOrderIndex} keyboardType="number-pad" />

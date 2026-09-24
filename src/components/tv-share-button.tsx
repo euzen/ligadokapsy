@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Pressable, Text, View } from 'react-native';
+import { Modal, Platform, Text, View } from 'react-native';
+
+import { Button } from '@/components/ui/button';
 
 export function TvShareButton({
   mode,
@@ -17,11 +19,6 @@ export function TvShareButton({
   const url = typeof window !== 'undefined' ? `${window.location.origin}/tv/${mode === 'match' ? 'matches' : 'tournaments'}/${id}` : '';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
 
-  const launch = () => {
-    if (Platform.OS !== 'web') return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   const copy = async () => {
     if (Platform.OS !== 'web') return;
     try {
@@ -37,14 +34,13 @@ export function TvShareButton({
 
   return (
     <>
-      <Pressable
-        onPress={launch}
+      <Button
+        variant="dark"
+        icon="📺"
+        label={label ?? t('tv.openTvMode')}
+        onPress={() => window.open(url, '_blank', 'noopener,noreferrer')}
         onLongPress={() => setOpen(true)}
-        className="min-h-11 flex-row items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 touch-manipulation"
-      >
-        <Text className="text-lg">📺</Text>
-        <Text className="text-sm font-bold text-white">{label ?? t('tv.openTvMode')}</Text>
-      </Pressable>
+      />
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View className="flex-1 items-center justify-center bg-slate-950/90 p-6">
@@ -55,12 +51,8 @@ export function TvShareButton({
               <img src={qrUrl} alt="QR" className="h-full w-full" />
             </View>
             <View className="flex-row gap-3">
-              <Pressable onPress={copy} className="flex-1 items-center justify-center rounded-xl bg-brand py-3">
-                <Text className="font-bold text-white">{copied ? t('tv.copied') : t('tv.copyUrl')}</Text>
-              </Pressable>
-              <Pressable onPress={() => setOpen(false)} className="items-center justify-center rounded-xl bg-slate-800 px-5 py-3">
-                <Text className="font-bold text-white">{t('common.close')}</Text>
-              </Pressable>
+              <Button className="flex-1" label={copied ? t('tv.copied') : t('tv.copyUrl')} onPress={copy} />
+              <Button className="flex-1" variant="dark" label={t('common.close')} onPress={() => setOpen(false)} />
             </View>
           </View>
         </View>

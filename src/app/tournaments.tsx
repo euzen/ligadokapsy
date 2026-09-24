@@ -72,13 +72,9 @@ export default function TournamentsScreen() {
         <View className="flex-1 min-w-[8rem]">
           <Text className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-400">{t('tournaments.sport')}</Text>
           <View className="flex-row flex-wrap gap-2">
-            <Pressable onPress={() => setSportFilter('all')} className={`rounded-lg px-3 py-2 ${sportFilter === 'all' ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={`text-xs font-black ${sportFilter === 'all' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t('tournaments.all')}</Text>
-            </Pressable>
+            <Button label={t('tournaments.all')} size="sm" variant={sportFilter === 'all' ? 'primary' : 'ghost'} onPress={() => setSportFilter('all')} />
             {favoriteSports.map((sport) => (
-              <Pressable key={sport} onPress={() => setSportFilter(sport)} className={`rounded-lg px-3 py-2 ${sportFilter === sport ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={`text-xs font-black ${sportFilter === sport ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`sports.${sport}`)}</Text>
-              </Pressable>
+              <Button key={sport} label={t(`sports.${sport}`)} size="sm" variant={sportFilter === sport ? 'primary' : 'ghost'} onPress={() => setSportFilter(sport)} />
             ))}
           </View>
         </View>
@@ -86,15 +82,11 @@ export default function TournamentsScreen() {
       <View className="flex-row flex-wrap items-center justify-between gap-2">
         <View className="flex-row flex-wrap gap-2">
           {VISIBILITY_FILTERS.map((item) => (
-            <Pressable key={item} onPress={() => setVisibility(item)} className={`rounded-lg px-3 py-2 ${visibility === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={`text-xs font-black ${visibility === item ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`tournaments.${item === 'public' ? 'public' : item === 'private' ? 'privateOnly' : 'all'}`)}</Text>
-            </Pressable>
+            <Button key={item} label={t(`tournaments.${item === 'public' ? 'public' : item === 'private' ? 'privateOnly' : 'all'}`)} size="sm" variant={visibility === item ? 'primary' : 'ghost'} onPress={() => setVisibility(item)} />
           ))}
           {STATUS_FILTERS.map((item) => (
             item !== 'all' && (
-              <Pressable key={item} onPress={() => setStatus(status === item ? 'all' : item)} className={`rounded-lg px-3 py-2 ${status === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={`text-xs font-black ${status === item ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`tournaments.status.${item}`)}</Text>
-              </Pressable>
+              <Button key={item} label={t(`tournaments.status.${item}`)} size="sm" variant={status === item ? 'primary' : 'ghost'} onPress={() => setStatus(status === item ? 'all' : item)} />
             )
           ))}
         </View>

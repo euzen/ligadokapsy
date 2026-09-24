@@ -48,23 +48,16 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
         <Field label={t('tournaments.sport')} value={sport} onChangeText={setSport} />
         <View className="flex-row flex-wrap gap-2">
           {favoriteSports.map((item) => (
-            <Pressable key={item} onPress={() => setSport(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${sport === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={sport === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`sports.${item}`)}</Text>
-            </Pressable>
+            <Button key={item} label={t(`sports.${item}`)} size="sm" variant={sport === item ? 'primary' : 'ghost'} onPress={() => setSport(item)} />
           ))}
         </View>
       </View>
       <View className="gap-2">
         <Text className="text-sm font-semibold text-slate-900 dark:text-white">{t('tournaments.format.title')}</Text>
         <View className="flex-row flex-wrap gap-2">
-          {formats.map((item) => {
-            const selected = format === item;
-            return (
-              <Pressable key={item} onPress={() => setFormat(item)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })} className={`min-h-11 items-center justify-center rounded-xl px-5 py-3 ${selected ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={selected ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`tournaments.format.${item}`)}</Text>
-              </Pressable>
-            );
-          })}
+          {formats.map((item) => (
+            <Button key={item} label={t(`tournaments.format.${item}`)} size="sm" variant={format === item ? 'primary' : 'ghost'} onPress={() => setFormat(item)} />
+          ))}
         </View>
       </View>
       <Field label={t('tournaments.location')} value={location} onChangeText={setLocation} />
@@ -75,9 +68,7 @@ export function TournamentFormModal({ tournament, showStatus, onClose, onSave }:
           <Text className="text-sm font-bold text-slate-900 dark:text-white">{t('tournaments.status.title')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {(['draft', 'published', 'completed'] as Tournament['status'][]).map((item) => (
-              <Pressable key={item} onPress={() => setStatus(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${status === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={status === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`tournaments.status.${item}`)}</Text>
-              </Pressable>
+              <Button key={item} label={t(`tournaments.status.${item}`)} size="sm" variant={status === item ? 'primary' : 'ghost'} onPress={() => setStatus(item)} />
             ))}
           </View>
         </View>

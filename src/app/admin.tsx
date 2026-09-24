@@ -83,14 +83,10 @@ function MatchOverride({ match, teamNames, admin, onDelete }: { match: Match; te
         <Button label={t('common.save')} onPress={() => void save()} />
         <View className="flex-row flex-wrap gap-2">
           {matchStatuses.map((status) => (
-            <Pressable key={status} onPress={() => void updateMatch(match.id, { status }, admin)} className={`rounded-lg px-3 py-2 ${match.status === status ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={match.status === status ? 'text-xs font-bold text-white' : 'text-xs font-bold text-slate-900 dark:text-slate-300'}>{t(`matches.status.${status}`)}</Text>
-            </Pressable>
+            <Button key={status} label={t(`matches.status.${status}`)} size="sm" variant={match.status === status ? 'primary' : 'ghost'} onPress={() => void updateMatch(match.id, { status }, admin)} />
           ))}
         </View>
-        <Pressable onPress={onDelete} className="rounded-lg bg-red-600 px-3 py-2">
-          <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-        </Pressable>
+        <Button label={t('delete.button')} variant="danger" size="sm" onPress={onDelete} />
       </View>
     </View>
   );
@@ -213,9 +209,7 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
                   </View>
                   <RolePicker user={user} />
                   <Button label={t('common.edit')} variant="ghost" onPress={() => setEditingUser(user)} />
-                  <Pressable onPress={() => setDeleting({ kind: 'user', id: user.id, name: fullName(user) })} className="rounded-lg bg-red-600 px-3 py-2">
-                    <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-                  </Pressable>
+                  <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting({ kind: 'user', id: user.id, name: fullName(user) })} />
                 </View>
               ))}
             </View>
@@ -244,9 +238,7 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
                     <View className="mt-3 flex-row gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                       <Button label={t('teams.masterRoster')} variant="secondary" onPress={() => router.push(`/teams/${team.id}` as never)} />
                       <Button label={t('common.edit')} variant="ghost" onPress={() => setEditingTeam(team)} />
-                      <Pressable onPress={() => setDeleting({ kind: 'team', id: team.id, name: team.name })} className="rounded-lg bg-red-600 px-3 py-2">
-                        <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-                      </Pressable>
+                      <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting({ kind: 'team', id: team.id, name: team.name })} />
                     </View>
                   </View>
                 ))}
@@ -271,9 +263,7 @@ export function AdminDashboard({ initialTab = 'overview' }: { initialTab?: Admin
                     </View>
                     <View className="flex-row gap-2">
                       <Button label={t('common.edit')} variant="ghost" onPress={() => setEditingTournament(tournament)} />
-                      <Pressable onPress={() => setDeleting({ kind: 'tournament', id: tournament.id, name: tournament.name })} className="rounded-lg bg-red-600 px-3 py-2">
-                        <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-                      </Pressable>
+                      <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting({ kind: 'tournament', id: tournament.id, name: tournament.name })} />
                     </View>
                   </View>
                 ))}

@@ -1,7 +1,7 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { AdminSectionNav } from '@/components/admin-section-nav';
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal';
@@ -61,9 +61,7 @@ export default function PagesAdminScreen() {
                 <View className="mt-3 flex-row gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                   <Button label={t('common.edit')} variant="ghost" onPress={() => setEditing(page)} />
                   <Button label={t('common.view')} variant="ghost" onPress={() => router.push(`/docs/${page.slug}` as never)} />
-                  <Pressable onPress={() => setDeleting(page)} className="rounded-lg bg-red-600 px-3 py-2">
-                    <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-                  </Pressable>
+                  <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting(page)} />
                 </View>
               </View>
             ))}

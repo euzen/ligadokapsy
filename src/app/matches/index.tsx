@@ -72,13 +72,9 @@ export default function MatchCenterScreen() {
             <View className="flex-1 min-w-[10rem]">
               <Text className="mb-1 text-xs font-bold text-slate-500 dark:text-slate-400">{t('matches.tournament')}</Text>
               <View className="flex-row flex-wrap gap-2">
-                <Pressable onPress={() => setTournamentFilter('all')} className={`rounded-lg px-3 py-2 ${tournamentFilter === 'all' ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                  <Text className={`text-xs font-black ${tournamentFilter === 'all' ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t('matches.all')}</Text>
-                </Pressable>
+                <Button label={t('matches.all')} size="sm" variant={tournamentFilter === 'all' ? 'primary' : 'ghost'} onPress={() => setTournamentFilter('all')} />
                 {tournaments.map((tournament) => (
-                  <Pressable key={tournament.id} onPress={() => setTournamentFilter(tournament.id)} className={`rounded-lg px-3 py-2 ${tournamentFilter === tournament.id ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                    <Text className={`text-xs font-black ${tournamentFilter === tournament.id ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{tournament.name}</Text>
-                  </Pressable>
+                  <Button key={tournament.id} label={tournament.name} size="sm" variant={tournamentFilter === tournament.id ? 'primary' : 'ghost'} onPress={() => setTournamentFilter(tournament.id)} />
                 ))}
               </View>
             </View>
@@ -86,11 +82,7 @@ export default function MatchCenterScreen() {
 
           <View className="flex-row flex-wrap items-center gap-2">
             {STATUS_FILTERS.map((status) => (
-              <Pressable key={status} onPress={() => setStatusFilter(status)} className={`rounded-lg px-3 py-2 ${statusFilter === status ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Text className={`text-xs font-black ${statusFilter === status ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                  {status === 'all' ? t('matches.all') : status === 'live' ? `🔴 ${t('matches.live')}` : t(`matches.${status}`)}
-                </Text>
-              </Pressable>
+              <Button key={status} label={status === 'all' ? t('matches.all') : status === 'live' ? `🔴 ${t('matches.live')}` : t(`matches.${status}`)} size="sm" variant={statusFilter === status ? 'primary' : 'ghost'} onPress={() => setStatusFilter(status)} />
             ))}
           </View>
 
@@ -98,18 +90,14 @@ export default function MatchCenterScreen() {
             <View className="flex-row flex-wrap gap-2">
               <Text className="self-center text-xs font-bold text-slate-500 dark:text-slate-400">{t('matches.sport')}:</Text>
               {uniqueSports.map((sport) => (
-                <Pressable key={sport} onPress={() => setSportFilter(sportFilter === sport ? 'all' : sport)} className={`rounded-lg px-3 py-2 ${sportFilter === sport ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                  <Text className={`text-xs font-black ${sportFilter === sport ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{t(`sports.${sport}`)}</Text>
-                </Pressable>
+                <Button key={sport} label={t(`sports.${sport}`)} size="sm" variant={sportFilter === sport ? 'primary' : 'ghost'} onPress={() => setSportFilter(sportFilter === sport ? 'all' : sport)} />
               ))}
             </View>
             <View className="ml-auto flex-row gap-2">
               {DATE_FILTERS.map((item) => (
-                <Pressable key={item} onPress={() => setDateFilter(item)} className={`rounded-lg px-3 py-2 ${dateFilter === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                  <Text className={`text-xs font-black ${dateFilter === item ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{item === 'all' ? t('matches.all') : t(`matches.${item}`)}</Text>
-                </Pressable>
+                <Button key={item} label={item === 'all' ? t('matches.all') : t(`matches.${item}`)} size="sm" variant={dateFilter === item ? 'primary' : 'ghost'} onPress={() => setDateFilter(item)} />
               ))}
-              <Button label={t('matches.reset')} variant="ghost" onPress={resetFilters} />
+              <Button label={t('matches.reset')} variant="ghost" size="sm" onPress={resetFilters} />
             </View>
           </View>
         </View>

@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { AdminSectionNav } from '@/components/admin-section-nav';
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal';
@@ -55,22 +55,19 @@ export default function SportsAdminScreen() {
                 <View>
                   <View className="flex-row items-start justify-between">
                     <Text className="text-lg font-bold text-slate-900 dark:text-white">{sport.name}</Text>
-                    <Pressable
+                    <Button
+                      label={t(sport.active ? 'sportsAdmin.active' : 'sportsAdmin.inactive')}
+                      size="sm"
+                      variant={sport.active ? 'secondary' : 'ghost'}
                       onPress={() => void updateSport(sport.id, { active: !sport.active })}
-                      className={`rounded-full px-2 py-0.5 ${sport.active ? 'bg-emerald-500/20' : 'bg-slate-100 dark:bg-slate-700'}`}
-                    >
-                      <Text className={`text-[10px] font-black ${sport.active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-300'}`}>
-                        {t(sport.active ? 'sportsAdmin.active' : 'sportsAdmin.inactive')}
-                      </Text>
-                    </Pressable>
+                      className="rounded-full"
+                    />
                   </View>
                   <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t(`sports.${sport.code}`)} · {sport.scoring_type}</Text>
                 </View>
                 <View className="mt-3 flex-row gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
                   <Button label={t('common.edit')} variant="ghost" onPress={() => setEditing(sport)} />
-                  <Pressable onPress={() => setDeleting(sport)} className="rounded-lg bg-red-600 px-3 py-2">
-                    <Text className="text-xs font-black text-white">{t('delete.button')}</Text>
-                  </Pressable>
+                  <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting(sport)} />
                 </View>
               </View>
             ))}

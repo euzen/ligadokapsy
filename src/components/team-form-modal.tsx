@@ -38,9 +38,7 @@ export function TeamFormModal({ team, onClose, onSave }: { team?: Team; onClose:
         <Field label={t('teams.sport')} value={sport} onChangeText={setSport} />
         <View className="flex-row flex-wrap gap-2">
           {favoriteSports.map((item) => (
-            <Pressable key={item} onPress={() => setSport(item)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${sport === item ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-              <Text className={sport === item ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'}>{t(`sports.${item}`)}</Text>
-            </Pressable>
+            <Button key={item} label={t(`sports.${item}`)} size="sm" variant={sport === item ? 'primary' : 'ghost'} onPress={() => setSport(item)} />
           ))}
         </View>
       </View>

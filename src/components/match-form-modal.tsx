@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { DatePickerField } from '@/components/date-picker-field';
 import { AdaptiveModal } from '@/components/mobile-bottom-sheet';
@@ -38,9 +38,7 @@ export function MatchFormModal({ tournamentId, teams, onClose, onSave }: { tourn
       <Text className="text-sm font-bold text-slate-900 dark:text-white">{label}</Text>
       <View className="flex-row flex-wrap gap-2">
         {teams.map((team) => (
-          <Pressable key={team.id} onPress={() => onChange(team.id)} className={`min-h-11 min-w-11 items-center justify-center rounded-xl px-4 py-2 touch-manipulation ${value === team.id ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}>
-            <Text className={value === team.id ? 'font-bold text-white' : 'font-bold text-slate-900 dark:text-white'} numberOfLines={1}>{team.name}</Text>
-          </Pressable>
+          <Button key={team.id} label={team.name} size="sm" variant={value === team.id ? 'primary' : 'ghost'} onPress={() => onChange(team.id)} />
         ))}
       </View>
     </View>

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 
 import { CsvImportModal } from '@/components/csv-import-modal';
 import { EntityShareModal } from '@/components/entity-share-modal';
@@ -139,9 +139,7 @@ export default function TeamDetailScreen() {
   return (
     <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900" contentContainerClassName="items-center px-4 pb-24 pt-6 safe-bottom overflow-scrolling-touch">
       <View className="w-full max-w-5xl gap-4">
-        <Pressable onPress={() => router.back()} className="min-h-11 min-w-11 self-start justify-center touch-manipulation">
-          <Text className="font-black text-brand">← {t('common.back')}</Text>
-        </Pressable>
+        <Button icon="←" label={t('common.back')} variant="ghost" onPress={() => router.back()} />
 
         <View className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 md:p-8">
           <View className="flex-row items-center gap-4">
@@ -174,9 +172,7 @@ export default function TeamDetailScreen() {
               <ExportButton filename={`${team.name}_roster`} headers={exportHeaders} rows={exportRows} />
               {canManage ? (
                 <>
-                  <Pressable onPress={() => setCsvImport(true)} className="min-h-9 flex-row items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 touch-manipulation dark:border-slate-600 dark:bg-slate-800">
-                    <Text className="text-xs font-bold text-slate-700 dark:text-slate-300">{t('dataTools.importCsv')}</Text>
-                  </Pressable>
+                  <Button label={t('dataTools.importCsv')} variant="ghost" size="sm" onPress={() => setCsvImport(true)} />
                   <Button label={t('sharing.share')} variant="secondary" onPress={() => setSharing(true)} />
                   <Button label={t('rosters.addPlayer')} onPress={() => setCreating(true)} />
                 </>
@@ -198,15 +194,9 @@ export default function TeamDetailScreen() {
                 </View>
                 {canManage ? (
                   <View className="flex-row gap-1">
-                    <Pressable onPress={() => openLink(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-brand/10 px-3 py-2 touch-manipulation">
-                      <Text className="text-xs font-black text-brand">{player.user_id ? t('sharing.unlink') : t('rosters.link')}</Text>
-                    </Pressable>
-                    <Pressable onPress={() => setEditing(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-slate-200 px-3 py-2 touch-manipulation dark:bg-slate-700">
-                      <Text className="text-xs font-black text-slate-900 dark:text-white">{t('common.edit')}</Text>
-                    </Pressable>
-                    <Pressable onPress={() => void remove(player)} className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-red-100 px-3 py-2 touch-manipulation dark:bg-red-900/30">
-                      <Text className="text-xs font-black text-red-600 dark:text-red-400">{t('teams.delete')}</Text>
-                    </Pressable>
+                    <Button label={player.user_id ? t('sharing.unlink') : t('rosters.link')} size="sm" variant={player.user_id ? 'secondary' : 'ghost'} onPress={() => openLink(player)} />
+                    <Button label={t('common.edit')} variant="ghost" size="sm" onPress={() => setEditing(player)} />
+                    <Button label={t('teams.delete')} variant="danger" size="sm" onPress={() => void remove(player)} />
                   </View>
                 ) : null}
               </View>

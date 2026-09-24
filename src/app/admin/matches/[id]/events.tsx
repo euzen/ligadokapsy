@@ -1,7 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 
 import { AdminSectionNav } from '@/components/admin-section-nav';
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal';
@@ -296,9 +296,7 @@ export default function MatchEventsAdminPage() {
       <ScrollView className="flex-1 bg-canvas" contentContainerClassName="p-6">
         <View className="mx-auto w-full max-w-6xl gap-6">
           <View className="flex-row items-center justify-between">
-            <Pressable onPress={() => router.push('/admin/matches')} className="min-h-11 self-start justify-center touch-manipulation">
-              <Text className="font-black text-brand">← {t('matchesAdmin.backToMatches')}</Text>
-            </Pressable>
+            <Button icon="←" label={t('matchesAdmin.backToMatches')} variant="ghost" onPress={() => router.push('/admin/matches')} />
             <TvShareButton mode="match" id={id} />
           </View>
 
@@ -353,12 +351,8 @@ export default function MatchEventsAdminPage() {
                         <Text className="font-mono text-xl font-black text-brand">{`${formatMinute(evt.clock_seconds)}'`}</Text>
                       </View>
                       <View className="mt-3 flex-row gap-2">
-                        <Pressable onPress={() => edit(evt)} className="rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-700">
-                          <Text className="text-xs font-black text-ink">{t('common.edit')}</Text>
-                        </Pressable>
-                        <Pressable onPress={() => setDeleting(evt)} className="rounded-lg bg-red-100 px-3 py-2 dark:bg-red-900/30">
-                          <Text className="text-xs font-black text-red-600 dark:text-red-400">{t('delete.button')}</Text>
-                        </Pressable>
+                        <Button label={t('common.edit')} variant="ghost" size="sm" onPress={() => edit(evt)} />
+                        <Button label={t('delete.button')} variant="danger" size="sm" onPress={() => setDeleting(evt)} />
                       </View>
                     </View>
                   );
@@ -373,36 +367,35 @@ export default function MatchEventsAdminPage() {
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xl font-black text-ink">{editingId ? t('matchesAdmin.editEvent') : t('matchesAdmin.addEvent')}</Text>
                   {editingId ? (
-                    <Pressable onPress={reset} className="rounded-lg bg-slate-100 px-3 py-1 dark:bg-slate-700">
-                      <Text className="text-xs font-black text-ink">{t('common.cancel')}</Text>
-                    </Pressable>
+                    <Button label={t('common.cancel')} variant="ghost" size="sm" onPress={reset} />
                   ) : null}
                 </View>
 
                 {/* Event kind selector */}
                 <View className="mt-4 flex-row flex-wrap gap-2">
                   {EVENT_KINDS.map((k) => (
-                    <Pressable
+                    <Button
                       key={k}
+                      label={t(`matchesAdmin.eventTypes.${k}`)}
+                      icon={EVENT_ICONS[k]}
+                      size="sm"
+                      variant={kind === k ? 'primary' : 'ghost'}
                       onPress={() => setKind(k)}
-                      className={`min-h-11 flex-row items-center gap-1 rounded-xl px-3 py-2 touch-manipulation ${kind === k ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}
-                    >
-                      <Text>{EVENT_ICONS[k]}</Text>
-                      <Text className={`text-xs font-bold ${kind === k ? 'text-white' : 'text-ink'}`}>{t(`matchesAdmin.eventTypes.${k}`)}</Text>
-                    </Pressable>
+                    />
                   ))}
                 </View>
 
                 {/* Team selector */}
                 <View className="mt-4 flex-row flex-wrap gap-2">
                   {[homeTeam, awayTeam].map((team) => (
-                    <Pressable
-                      key={team.id}
-                      onPress={() => { setTeamId(team.id); setRosterPlayerId(null); }}
-                      className={`min-h-11 flex-1 items-center justify-center rounded-xl px-3 py-2 touch-manipulation ${effectiveTeamId === team.id ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}
-                    >
-                      <Text className={`text-xs font-bold ${effectiveTeamId === team.id ? 'text-white' : 'text-ink'}`} numberOfLines={1}>{team.name}</Text>
-                    </Pressable>
+                    <View key={team.id} className="flex-1">
+                      <Button
+                        label={team.name}
+                        size="sm"
+                        variant={effectiveTeamId === team.id ? 'primary' : 'ghost'}
+                        onPress={() => { setTeamId(team.id); setRosterPlayerId(null); }}
+                      />
+                    </View>
                   ))}
                 </View>
 
@@ -413,13 +406,13 @@ export default function MatchEventsAdminPage() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                       <View className="flex-row gap-2">
                         {selectedRoster.map((player) => (
-                          <Pressable
+                          <Button
                             key={player.id}
+                            label={`#${player.jersey_number ?? '–'} ${rosterFullName(player)}`}
+                            size="sm"
+                            variant={rosterPlayerId === player.id ? 'primary' : 'ghost'}
                             onPress={() => { setRosterPlayerId(player.id); setPlayerName(rosterFullName(player)); }}
-                            className={`min-h-11 rounded-xl px-3 py-2 ${rosterPlayerId === player.id ? 'bg-brand' : 'bg-slate-100 dark:bg-slate-700'}`}
-                          >
-                            <Text className={`text-xs font-bold ${rosterPlayerId === player.id ? 'text-white' : 'text-ink'}`}>#{player.jersey_number ?? '–'} {rosterFullName(player)}</Text>
-                          </Pressable>
+                          />
                         ))}
                       </View>
                     </ScrollView>
@@ -433,15 +426,11 @@ export default function MatchEventsAdminPage() {
                 {/* Minute with quick buttons */}
                 <View className="mt-4">
                   <View className="flex-row items-center gap-2">
-                    <Pressable onPress={() => adjustMinute(-1)} className="min-h-11 min-w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
-                      <Text className="font-black text-ink">−1</Text>
-                    </Pressable>
+                    <Button label="−1" variant="ghost" size="sm" onPress={() => adjustMinute(-1)} />
                     <View className="flex-1">
                       <Field label={t('matchesAdmin.minute')} value={minute} onChangeText={setMinute} keyboardType="number-pad" />
                     </View>
-                    <Pressable onPress={() => adjustMinute(1)} className="min-h-11 min-w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
-                      <Text className="font-black text-ink">+1</Text>
-                    </Pressable>
+                    <Button label="+1" variant="ghost" size="sm" onPress={() => adjustMinute(1)} />
                   </View>
                 </View>
 
