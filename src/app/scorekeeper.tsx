@@ -10,18 +10,28 @@ import type { MatchEvent, PublicMatch, RosterPlayer } from '@/types/database';
 
 function clock(seconds: number) { return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`; }
 
-function optimisticEvent(matchId: string, event_type: MatchEvent['event_type'], team_id: string | null, clock_seconds: number, seq: number): MatchEvent {
+function optimisticEvent(
+  matchId: string,
+  event_type: MatchEvent['event_type'],
+  team_id: string | null,
+  clock_seconds: number,
+  seq: number,
+  roster_player_id: string | null,
+  player_name: string | null,
+  scoreDeltaHome: number,
+  scoreDeltaAway: number,
+): MatchEvent {
   return {
     id: `opt-${seq}`,
     match_id: matchId,
     event_type,
     team_id,
-    player_name: null,
+    player_name,
     metadata: null,
-    score_delta_home: event_type === 'score' && team_id ? 1 : 0,
-    score_delta_away: event_type === 'score' && team_id ? 1 : 0,
+    score_delta_home: scoreDeltaHome,
+    score_delta_away: scoreDeltaAway,
     clock_seconds,
-    roster_player_id: null,
+    roster_player_id,
     created_at: new Date().toISOString(),
   };
 }
@@ -55,16 +65,26 @@ export default function ScorekeeperScreen() {
     return () => { clearTimeout(timeout); clearInterval(interval); };
   }, [refresh]);
 
+  const playerName = (teamId: string | null, rosterId: string | null) => {
+    if (!teamId || !rosterId) return null;
+    const list = teamId === bundle?.match.home_team_id ? homeRoster : awayRoster;
+    const player = list.find((p) => p.id === rosterId);
+    return player ? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || null : null;
+  };
+
   const action = async (event_type: MatchEvent['event_type'], team_id: string | null = null) => {
     if (!bundle) return;
     const roster = selectedPlayer?.teamId === team_id ? selectedPlayer.rosterId : null;
+    const name = playerName(team_id, roster) ?? (roster ? null : t('scorekeeper.unattributed'));
     const clockSeconds = bundle.match.clock_seconds + (bundle.match.clock_started_at ? Math.max(0, Math.floor((now - new Date(bundle.match.clock_started_at).getTime()) / 1000)) : 0);
+    const deltaHome = event_type === 'score' && team_id === bundle.match.home_team_id ? 1 : 0;
+    const deltaAway = event_type === 'score' && team_id === bundle.match.away_team_id ? 1 : 0;
     optimisticSeq.current += 1;
 
     // Optimistic update
     setBundle((current) => {
       if (!current) return current;
-      const next = { ...current, events: [...current.events, optimisticEvent(current.match.id, event_type, team_id, clockSeconds, optimisticSeq.current)] };
+      const next = { ...current, events: [...current.events, optimisticEvent(current.match.id, event_type, team_id, clockSeconds, optimisticSeq.current, roster, name, deltaHome, deltaAway)] };
       if (event_type === 'score' && team_id) {
         if (team_id === current.match.home_team_id) next.match = { ...next.match, home_score: (next.match.home_score ?? 0) + 1 };
         if (team_id === current.match.away_team_id) next.match = { ...next.match, away_score: (next.match.away_score ?? 0) + 1 };
@@ -77,7 +97,7 @@ export default function ScorekeeperScreen() {
     });
 
     try {
-      await recordMatchEvent(activeSecret, { event_type, team_id, roster_player_id: roster, player_name: roster ? null : t('scorekeeper.unattributed') });
+      await recordMatchEvent(activeSecret, { event_type, team_id, roster_player_id: roster, player_name: name });
       if (event_type === 'match_end') toast.success(t('toast.matchEnded'));
       if (event_type === 'score') toast.success(t('toast.scoreAdded'));
       await refresh();
