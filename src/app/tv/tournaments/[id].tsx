@@ -104,10 +104,27 @@ export default function TvTournamentScreen() {
 
   const reload = useCallback(() => { void refreshMatches(); }, [refreshMatches]);
 
-  useRealtimeChannel('tv-tournament', [
-    { table: 'matches', filter: `tournament_id=eq.${id}`, onEvent: () => void reload() },
-    { table: 'match_events', filter: `match_id=in.(${(matches ?? []).map((m) => m.id).join(',')})`, onEvent: () => void reload() },
-  ]);
+  useEffect(() => {
+    const timeout = setTimeout(() => void reload(), 0);
+    const interval = setInterval(() => void reload(), 5000);
+    return () => { clearTimeout(timeout); clearInterval(interval); };
+  }, [reload]);
+
+  const realtimeTables = useMemo(() => {
+    const tables: { table: string; filter?: string; onEvent: () => void }[] = [
+      { table: 'matches', filter: `tournament_id=eq.${id}`, onEvent: () => void reload() },
+    ];
+    if ((matches ?? []).length > 0) {
+      tables.push({
+        table: 'match_events',
+        filter: `match_id=in.(${(matches ?? []).map((m) => m.id).join(',')})`,
+        onEvent: () => void reload(),
+      });
+    }
+    return tables;
+  }, [id, matches, reload]);
+
+  useRealtimeChannel('tv-tournament', realtimeTables);
 
   const publicUrl = useMemo(() => (typeof window !== 'undefined' ? `${window.location.origin}/tournaments/${id}` : ''), [id]);
 

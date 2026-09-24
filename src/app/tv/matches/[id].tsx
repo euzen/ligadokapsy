@@ -77,15 +77,10 @@ export default function TvMatchScreen() {
   }, [id, triggerPulse]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => void load(), 0);
-    return () => clearTimeout(timeout);
-  }, [load]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setNow(Date.now()), 0);
-    const interval = setInterval(() => setNow(Date.now()), 1000);
+    const timeout = setTimeout(() => { setNow(Date.now()); void load(); }, 0);
+    const interval = setInterval(() => { setNow(Date.now()); void load(); }, 1000);
     return () => { clearTimeout(timeout); clearInterval(interval); };
-  }, []);
+  }, [load]);
 
   const realtimeTables = useMemo(() => [
     { table: 'match_events', filter: `match_id=eq.${id}`, onEvent: () => void load() },
