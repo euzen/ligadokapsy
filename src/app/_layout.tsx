@@ -1,7 +1,7 @@
 import '@/lib/i18n';
 import '../../global.css';
 
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -13,6 +13,21 @@ import { ToastProvider } from '@/components/ui/toast-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 
+function AppChrome() {
+  const pathname = usePathname();
+  const isTv = pathname.startsWith('/tv');
+  return (
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      {!isTv ? <AppNavigation /> : null}
+      {!isTv ? <Breadcrumbs /> : null}
+      <View className="flex-1">
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+      </View>
+      {!isTv ? <CookieConsent /> : null}
+    </View>
+  );
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
@@ -20,14 +35,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <ToastProvider>
             <StatusBar style="auto" />
-            <View className="flex-1 bg-slate-50 dark:bg-slate-900">
-              <AppNavigation />
-              <Breadcrumbs />
-              <View className="flex-1">
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
-              </View>
-              <CookieConsent />
-            </View>
+            <AppChrome />
           </ToastProvider>
         </ThemeProvider>
       </AuthProvider>

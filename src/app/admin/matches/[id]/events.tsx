@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'rea
 
 import { AdminSectionNav } from '@/components/admin-section-nav';
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal';
+import { TvShareButton } from '@/components/tv-share-button';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { useToast } from '@/components/ui/toast-provider';
@@ -270,9 +271,12 @@ export default function MatchEventsAdminPage() {
       <AdminSectionNav active="matches" />
       <ScrollView className="flex-1 bg-canvas" contentContainerClassName="p-6">
         <View className="mx-auto w-full max-w-6xl gap-6">
-          <Pressable onPress={() => router.push('/admin/matches')} className="min-h-11 self-start justify-center touch-manipulation">
-            <Text className="font-black text-brand">← {t('matchesAdmin.backToMatches')}</Text>
-          </Pressable>
+          <View className="flex-row items-center justify-between">
+            <Pressable onPress={() => router.push('/admin/matches')} className="min-h-11 self-start justify-center touch-manipulation">
+              <Text className="font-black text-brand">← {t('matchesAdmin.backToMatches')}</Text>
+            </Pressable>
+            <TvShareButton mode="match" id={id} />
+          </View>
 
           {/* Header banner */}
           <View className="rounded-3xl bg-ink p-6 md:p-10">
